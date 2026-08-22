@@ -43,3 +43,7 @@ app.include_router(cases.router, prefix="/cases", tags=["Cases & Evidence Manage
 app.include_router(search.router, prefix="/search", tags=["Reverse Fingerprint Search"])
 app.include_router(takedowns.router, prefix="/takedowns", tags=["Takedown Operations"])
 app.include_router(analysis.router, prefix="/analysis", tags=["Visual Analysis & Alert Matrix"])
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

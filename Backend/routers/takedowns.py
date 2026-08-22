@@ -52,35 +52,24 @@ def delete_takedown(takedown_id: int, db: sqlite3.Connection = Depends(get_db)):
 def generate_notice_text(target_url: str, hosting_provider: str = "Hosting / Cloud Service Provider", recipient_email: str = "abuse@domain.com"):
     """
     Generates a legally structured DMCA / NCII Intermediary Takedown notice
-    referencing Section 66E, 67A of IT Act and Rule 3(2)(b) IT Intermediary Rules.
-    """
-    notice = f"""SENTINEX-AI AUTOMATED LEGAL NOTICE OF INFRINGEMENT & TAKEDOWN DEMAND
+- Date/Time: {current_time}
+- Laws to cite: Section 66E, Section 67/67A of the Information Technology Act 2000, Rule 3(2)(b) of IT Rules 2021, and Title 17 U.S.C. 512(c).
+- Demands: 24-hour mandatory removal, log preservation for law enforcement.
+- Tone: Extremely formal, legally binding, urgent.
 
-TO: Abuse & Legal Compliance Department, {hosting_provider} ({recipient_email})
-SUBJECT: URGENT: Mandatory Takedown of Non-Consensual Intimate Imagery (NCII) — Immediate Action Required
+Output ONLY the notice text, nothing else."""
 
-Dear Abuse Compliance Officer,
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are a cyber-law assistant."},
+                {"role": "user", "content": system_prompt}
+            ]
+        )
+        notice = response.choices[0].message.content.strip()
+    except Exception as e:
+        # Fallback to template if API fails
+        notice = f"Error generating dynamic legal notice: {str(e)}\n\nPlease ensure your OpenAI configuration is correct."
 
-This communication constitutes formal statutory notice that material hosted, cached, or transmitted via your network infrastructure constitutes unauthorized, non-consensual intimate imagery (NCII) disseminated in direct violation of fundamental privacy rights and statutory law.
-
-1. INFRINGING RESOURCE IDENTIFIERS:
-• Target URL: {target_url}
-• Infrastructure Provider: {hosting_provider}
-• Date & Time of Verification: {schemas.datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC') if hasattr(schemas, 'datetime') else 'Recent'}
-
-2. SUGGESTED / RELEVANT STATUTORY CITATIONS:
-• Section 66E, Information Technology Act, 2000 (Violation of Bodily Privacy)
-• Section 67 & 67A, Information Technology Act, 2000 (Publishing Obscene / Sexually Explicit Material)
-• Rule 3(2)(b), Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021 (Mandatory disabling of access within 24 HOURS of receipt of complaint)
-• Title 17 U.S.C. § 512(c) (DMCA Statutory Notice) / EU Digital Services Act (DSA) Article 16
-
-3. MANDATORY REMOVAL DEMAND:
-You are hereby required to immediately disable access to, remove, and expunge the infringing material located at the specified URL within 24 hours of receipt of this notice.
-
-4. LOG PRESERVATION NOTICE:
-You are formally requested to preserve all server access logs, upload IP addresses, account identifiers, and billing records associated with the above upload for law enforcement subpoena pursuant to criminal investigation.
-
-Prepared via: SentinEx-AI Privacy-Preserving Defense Platform
-Verification Hash: Zero-Trust SHA-256 Validated
-"""
     return {"notice_text": notice, "target_url": target_url, "hosting_provider": hosting_provider}

@@ -52,25 +52,30 @@ function AnalyzeImage({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
 
     setAnalyzing(true);
     setResult(null);
-    setStatusMessage("Initializing client-side sandbox...");
+    setStatusMessage("Uploading to SentinEX AI analysis engine...");
 
     try {
-      // Step 1: Compute Perceptual Hash (dHash) on HTML5 Canvas - 0 NETWORK BYTES
-      await new Promise((r) => setTimeout(r, 250));
-      setStatusMessage("Validating media format & extracting memory sandbox buffers...");
-      const phash = await computeLocalPerceptualHash(file);
-      
-      // Step 2: Compute cryptographic SHA-256 evidence integrity token
-      setStatusMessage("Computing cryptographic SHA-256 evidence integrity seal...");
-      const sha256 = await computeSHA256(file);
+      const formData = new FormData();
+      formData.append("file", file);
 
-      // Step 3: Run multi-model inspection pipeline
-      setStatusMessage("Evaluating Human/Face Presence & Independent Content Safety (SFW/NSFW)...");
-      await new Promise((r) => setTimeout(r, 300));
-      setStatusMessage("Analyzing AI Diffusion/GAN Spectral Artifacts & ELA Manipulation...");
-      await new Promise((r) => setTimeout(r, 300));
-      setStatusMessage("Evaluating Biometric Deepfake Risk & Computing Authenticity Index...");
-      const analysis = await detectLocalManipulation(file);
+      // Hit our newly upgraded backend endpoint that uses Swytchcode (OpenAI)
+      setStatusMessage("Evaluating Deepfake Risk & Content Safety via Swytchcode AI...");
+      const uploadRes = await fetch(`${API_BASE}/cases/${caseId || 1}/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error("Analysis failed on backend server.");
+      }
+
+      const uploadData = await uploadRes.json();
+      
+      // Early SFW check if you returned that earlier, else it gives full data
+      const analysis = uploadData.content_detection;
+
+      const phash = uploadData.phash || "phash_not_computed";
+      const sha256 = uploadData.sha256 || "sha256_not_computed";
 
       // Step 4: Check reverse search index using ONLY the anonymized hash
       setStatusMessage("Querying anonymized threat index with visual fingerprint...");
@@ -100,12 +105,17 @@ function AnalyzeImage({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
         matchedResults: matchedItems,
         timestamp: new Date().toISOString(),
       });
-      setStatusMessage("Analysis Complete. Integrity Token Sealed.");
+
+      // The backend upload already creates evidence and image records, so we don't need to manually click 'save'
+      setEvidenceSaved(true);
+      if (onEvidenceSaved) onEvidenceSaved();
+
     } catch (err) {
-      console.error("Analysis error:", err);
-      setStatusMessage("Analysis error: " + err.message);
+      console.error("Backend AI processing error:", err);
+      alert("Failed to analyze image using AI backend.");
     } finally {
       setAnalyzing(false);
+      setStatusMessage("");
     }
   }
 
@@ -528,20 +538,22 @@ function AnalyzeImage({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
           </div>
 
           {/* Statutory Guidance */}
-          <div className="statutory-box">
-            <h4>
-              <i className="fa-solid fa-scale-balanced" style={{ color: "var(--primary)" }}></i>
-              Suggested Statutory Provisions (India IT Act & Legal Framework)
-            </h4>
-            <p style={{ fontSize: "12.5px", color: "var(--text-muted)", margin: "4px 0 10px" }}>
-              Suggested legal provisions for notice drafting based on detected indicators:
-            </p>
-            <div className="statutory-tags">
-              {(result.statutoryViolations || result.suggestedStatutes || []).map((v, i) => (
-                <span key={i} className="statute-pill">{v}</span>
-              ))}
+          {result.contentSafety !== "SFW" && (
+            <div className="statutory-box">
+              <h4>
+                <i className="fa-solid fa-scale-balanced" style={{ color: "var(--primary)" }}></i>
+                Suggested Statutory Provisions (India IT Act & Legal Framework)
+              </h4>
+              <p style={{ fontSize: "12.5px", color: "var(--text-muted)", margin: "4px 0 10px" }}>
+                Suggested legal provisions for notice drafting based on detected indicators:
+              </p>
+              <div className="statutory-tags">
+                {(result.statutoryViolations || result.suggestedStatutes || []).map((v, i) => (
+                  <span key={i} className="statute-pill">{v}</span>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Action Row */}
           <div style={{ display: "flex", gap: "10px", marginTop: "20px", flexWrap: "wrap" }}>

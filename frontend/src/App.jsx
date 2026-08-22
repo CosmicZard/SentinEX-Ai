@@ -420,7 +420,7 @@ function App() {
               <span className="kpi-label">Threat Matches</span>
               <span className="kpi-icon" style={{ color: "#d97706" }}><i className="fa-solid fa-globe"></i></span>
             </div>
-            <div className="kpi-value" style={{ color: "#d97706" }}>{stats.total_matches > 0 ? stats.total_matches + 3 : 0}</div>
+            <div className="kpi-value" style={{ color: "#d97706" }}>{stats.total_matches}</div>
             <div className="kpi-sub">Across indexed hosts</div>
           </div>
 

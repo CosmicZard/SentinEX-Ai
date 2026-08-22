@@ -152,7 +152,7 @@ def init_db():
     # Seed initial demo case if cases table is empty
     cursor.execute("SELECT COUNT(*) FROM cases")
     if cursor.fetchone()[0] == 0:
-        seed_sample_case(cursor)
+        # seed_sample_case(cursor)
         conn.commit()
 
     conn.close()

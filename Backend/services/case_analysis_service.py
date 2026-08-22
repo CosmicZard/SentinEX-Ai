@@ -43,3 +43,30 @@ async def process_case_evidence(db: sqlite3.Connection, case_id: int, file_conte
         "risk_level": risk_level,
         "statutory_violations": violations
     }
+
+from openai import OpenAI
+
+def analyze_case(case_id: int, db) -> dict:
+    client = OpenAI()
+    from models import Case
+    case = db.query(Case).filter(Case.id == case_id).first()
+    if not case:
+        return None
+        
+    prompt = f"Analyze the following case for Trust & Safety risk assessment. Case ID: {case.case_number}. Title: {case.title}. Description: {case.description}. Status: {case.status}. Provide a JSON response with keys: 'summary' (string), 'recommended_actions' (list of strings), and 'urgency' (string: 'Low', 'Medium', 'High')."
+    
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": "You are a cyber intelligence legal assistant."},
+            {"role": "user", "content": prompt}
+        ],
+        response_format={"type": "json_object"}
+    )
+    
+    import json
+    analysis = json.loads(response.choices[0].message.content)
+    return {
+        "case_id": case_id,
+        "analysis": analysis
+    }

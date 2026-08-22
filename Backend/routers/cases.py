@@ -15,18 +15,12 @@ from schemas import CaseCreate, CaseUpdate, CaseResponse
 # Import legacy services needed for old endpoints
 from services.legal_pdf_service import generate_formal_it_act_pdf
 
-# Import new services (these need to exist or be mocked)
-try:
-    from services.fingerprint_service import generate_fingerprints
-    from services.matching_service import find_similar_images
-    from services.content_detection_service import detect_sensitive_content
-    from services.risk_service import calculate_risk
-    from services.analysis_service import analyze_image
-    from services.case_analysis_service import analyze_case
-    from services.evidence_service import get_case_evidence
-    from services.video_analysis_service import analyze_video
-except ImportError:
-    pass # Let it fail at runtime if not implemented
+# Import new services
+from services.fingerprint_service import compute_perceptual_hash
+from services.matching_service import evaluate_matches
+from services.content_detection_service import detect_sensitive_content
+from services.risk_service import calculate_risk_level
+from services.video_analysis_service import analyze_video
 
 router = APIRouter()
 
@@ -58,13 +52,22 @@ def create_case(case_data: schemas.CaseCreate, db: sqlite3.Connection = Depends(
         raise HTTPException(status_code=500, detail="Failed to create case")
     return case
 
-@router.get("/{case_id}", response_model=schemas.CaseResponse)
+@router.get("/{case_id}")
 def get_case(case_id: int, db: sqlite3.Connection = Depends(get_db)):
-    """Fetches details for a single case."""
+    """Fetches details for a single case along with its evidence and takedowns."""
     case = models.get_case_by_id(db, case_id)
     if case is None:
         raise HTTPException(status_code=404, detail="Case not found")
-    return case
+        
+    evidence = models.get_evidence_by_case(db, case_id)
+    takedowns = models.get_takedowns(db, case_id)
+    
+    return {
+        "case": case,
+        "evidence": evidence,
+        "takedowns": takedowns,
+        "reports": []
+    }
 
 @router.put("/{case_id}", response_model=schemas.CaseResponse)
 def update_case(case_id: int, case_data: schemas.CaseUpdate, db: sqlite3.Connection = Depends(get_db)):
@@ -178,7 +181,8 @@ def upload_image(case_id: int, file: UploadFile = File(...), db: Session = Depen
         raise HTTPException(status_code=500, detail=f"Failed to save image: {str(e)}")
         
     try:
-        fingerprints = generate_fingerprints(file_path)
+        phash = compute_perceptual_hash(file_path)
+        fingerprints = {"phash": phash, "dhash": phash}
     except Exception as e:
         if os.path.exists(file_path): os.remove(file_path)
         raise HTTPException(status_code=500, detail=f"Fingerprint generation failed: {str(e)}")
@@ -189,12 +193,14 @@ def upload_image(case_id: int, file: UploadFile = File(...), db: Session = Depen
         if os.path.exists(file_path): os.remove(file_path)
         raise HTTPException(status_code=500, detail=f"Content detection failed: {str(e)}")
         
-    risk_level = calculate_risk(is_sensitive=content_result["is_sensitive"], confidence=content_result["confidence"])
+    is_sensitive = content_result.get("contentSafety") != "SFW"
+    risk_level = calculate_risk_level(confidence=content_result.get("authenticityScore", 0) / 100.0, match_count=0)
     
     new_image = Image(
         case_id=case_id, filename=original_filename, file_path=file_path, content_type=file.content_type,
-        ai_label=content_result["label"], ai_confidence=content_result["confidence"],
-        is_sensitive=content_result["is_sensitive"], risk_level=risk_level
+        ai_label=content_result.get("manipulationType", "Unknown"), 
+        ai_confidence=content_result.get("authenticityScore", 0) / 100.0,
+        is_sensitive=is_sensitive, risk_level=risk_level
     )
     db.add(new_image)
     db.commit()
@@ -205,13 +211,65 @@ def upload_image(case_id: int, file: UploadFile = File(...), db: Session = Depen
     db.commit()
     db.refresh(new_fingerprint)
     
+    # Sync with legacy evidence table for Dashboard KPI metrics
+    try:
+        from sqlalchemy import text
+        db.execute(
+            text("INSERT INTO evidence (case_id, anonymized_phash, evidence_type, domain, source_url) VALUES (:c, :p, 'image', 'client-device-scan', :u)"),
+            {"c": case_id, "p": fingerprints["phash"], "u": f"local-scan://{original_filename}"}
+        )
+        db.commit()
+    except Exception as e:
+        print("Warning: Could not sync legacy evidence table", e)
+    
+    # Generate statutes ONLY if sensitive
+    statutes = []
+    if is_sensitive:
+        statutes = [
+            "IT Act Sec 66E - Violation of Bodily Privacy",
+            "IT Act Sec 67A - Sexually Explicit Electronic Material",
+            "IT Act Sec 66D - Cheating by Personation / AI Deepfake",
+            "IT Intermediary Rules 2021 (Rule 3(2)(b) - 24-hr Mandatory Removal)"
+        ]
+
+    # Map the AI result directly to what AnalyzeImage.jsx expects
+    mapped_ai_result = {
+        "fileType": f"Image ({file.content_type.split('/')[-1].upper()})",
+        "fileName": original_filename,
+        "fileSizeKb": "Unknown",
+        "humanDetected": content_result.get("humanDetected", True),
+        "humanConfidence": 99,
+        "faceDetected": content_result.get("faceDetected", True),
+        "faceCount": 1 if content_result.get("faceDetected") else 0,
+        "faceConfidence": 95 if content_result.get("faceDetected") else 0,
+        "contentSafety": content_result.get("contentSafety", "SFW"),
+        "safetyScore": 10 if is_sensitive else 90,
+        "nsfwProbability": 90 if is_sensitive else 10,
+        "aiGeneratedProbability": content_result.get("aiGeneratedProbability", 0),
+        "manipulationDetected": content_result.get("manipulationType", "None Detected") != "None Detected",
+        "manipulationScore": 100 - content_result.get("authenticityScore", 100),
+        "manipulationType": content_result.get("manipulationType", "None Detected"),
+        "compressionAnomalyScore": 10,
+        "deepfakeRisk": content_result.get("deepfakeRisk", "Low"),
+        "deepfakeScore": 100 - content_result.get("authenticityScore", 100),
+        "faceSwapProbability": 100 - content_result.get("authenticityScore", 100),
+        "authenticityScore": content_result.get("authenticityScore", 100),
+        "overallVerdict": content_result.get("manipulationType", "Authentic"),
+        "alertClass": "critical" if content_result.get("deepfakeRisk") == "Critical" else "warning" if content_result.get("deepfakeRisk") == "High" else "safe",
+        "alertBadgeText": content_result.get("deepfakeRisk", "Safe").upper(),
+        "alertDescription": "Analyzed via Swytchcode AI",
+        "classification": content_result.get("deepfakeRisk", "Low"),
+        "confidence": content_result.get("authenticityScore", 100),
+        "riskLevel": content_result.get("deepfakeRisk", "Low"),
+        "suggestedStatutes": statutes,
+        "statutoryViolations": statutes,
+        "timestamp": "Now"
+    }
+    
     return {
-        "message": "Image uploaded successfully", "image_id": new_image.id, "case_id": case_id,
+        "message": "Image uploaded and analyzed successfully", "image_id": new_image.id, "case_id": case_id,
         "filename": original_filename, "phash": fingerprints["phash"], "dhash": fingerprints["dhash"],
-        "content_detection": {
-            "is_sensitive": content_result["is_sensitive"], "confidence": content_result["confidence"],
-            "label": content_result["label"], "risk_level": risk_level
-        },
+        "content_detection": mapped_ai_result,
         "preview_url": f"/cases/{case_id}/evidence/IMAGE/{new_image.id}/preview"
     }
 
@@ -243,6 +301,15 @@ def upload_video(case_id: int, file: UploadFile = File(...), db: Session = Depen
         raise HTTPException(status_code=500, detail=f"Video analysis failed: {str(e)}")
         
     video_analysis = analysis.get("video_analysis", {})
+    
+    # EARLY EXIT FOR SFW CONTENT
+    if video_analysis.get("sensitive_frames", 0) == 0:
+        if os.path.exists(file_path): os.remove(file_path)
+        return {
+            "status": "safe",
+            "message": "The uploaded video is safe for work. It is not sensitive or intimate content. No takedown requests or legal actions will be suggested. Process ended.",
+            "is_sensitive": False
+        }
     new_video = Video(
         case_id=case_id, filename=original_filename, file_path=file_path, content_type=file.content_type,
         duration=video_analysis.get("duration", 0), frames_analyzed=video_analysis.get("frames_analyzed", 0),

@@ -62,6 +62,11 @@ function CaseWorkspace({
 }) {
   const [activeTab, setActiveTab] = useState("overview");
   const [currentCase, setCurrentCase] = useState(caseData);
+
+  // Sync state if caseData prop changes
+  useEffect(() => {
+    setCurrentCase(caseData);
+  }, [caseData]);
   const [evidenceList, setEvidenceList] = useState([]);
   const [takedownList, setTakedownList] = useState([]);
   const [reportList, setReportList] = useState([]);

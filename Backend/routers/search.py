@@ -67,3 +67,25 @@ def search_by_fingerprint(req: schemas.FingerprintSearchRequest, db: sqlite3.Con
         matches_found=len(matches),
         results=matches
     )
+
+from pydantic import BaseModel
+class OsintSearchRequest(BaseModel):
+    image_url: str
+
+@router.post("/osint-report")
+def get_osint_report(req: OsintSearchRequest):
+    """
+    Live Reverse Image Search Pipeline (OSINT):
+    1. Sends image URL to SerpApi/Google Lens.
+    2. Receives raw JSON URLs.
+    3. Uses OpenAI to format the forensic intelligence report.
+    """
+    from services.osint_service import fetch_reverse_image_search_data, generate_osint_report
+    
+    # 1. Fetch raw data from Search Engine (Google Lens/SerpApi)
+    raw_data = fetch_reverse_image_search_data(req.image_url)
+    
+    # 2. Feed messy JSON to Swytchcode OpenAI using the strict Forensic Prompt
+    report = generate_osint_report(raw_data)
+    
+    return {"report": report}
