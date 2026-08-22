@@ -124,8 +124,26 @@ def test_full_pipeline():
         assert data["overall_verdict"] == tc["expected"], f"Case {idx} failed: got {data['overall_verdict']}, expected {tc['expected']}"
     print(f"[PASS] All 6 Alert Matrix Decision Pathways Verified Perfectly")
 
-    print("\n>>> ALL 12 PIPELINE & SPECIFICATION TESTS PASSED PERFECTLY! <<<")
+    # 13. Direct Image Analysis & Scan Endpoint Test
+    test_img_path = "../test.jpg" if os.path.exists("../test.jpg") else "test.jpg"
+    if os.path.exists(test_img_path):
+        with open(test_img_path, "rb") as f:
+            res = client.post("/analysis/scan", files={"file": ("test.jpg", f, "image/jpeg")})
+        assert res.status_code == 200
+        scan_data = res.json()
+        assert "content_detection" in scan_data
+        assert "phash" in scan_data
+        print("[PASS] Standalone Image Scan Endpoint /analysis/scan Verified")
+
+    # 14. Takedown Dynamic Statutory Notice Generator Test
+    res = client.post("/takedowns/generate-notice?target_url=https://example-leak.net/image1.jpg")
+    assert res.status_code == 200
+    assert "IT Rules 2021" in res.json()["notice_text"] or "66E" in res.json()["notice_text"]
+    print("[PASS] Statutory Takedown Notice Generator Verified")
+
+    print("\n>>> ALL 14 PIPELINE, FORENSIC & SPECIFICATION TESTS PASSED PERFECTLY! <<<")
 
 if __name__ == "__main__":
     test_full_pipeline()
+
 

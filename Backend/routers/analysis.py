@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter
+from fastapi import APIRouter
 from pydantic import BaseModel, Field
 from typing import Optional, List
 
@@ -119,3 +119,48 @@ def get_alert_matrix_spec():
             {"condition": "NSFW + High Deepfake", "verdict": "Critical / High Alert", "alert_level": "critical"}
         ]
     }
+
+from fastapi import UploadFile, File, HTTPException
+import shutil
+import uuid
+import os
+from services.analysis_service import analyze_image_file
+
+@router.post("/image")
+@router.post("/scan")
+def inspect_image_standalone(file: UploadFile = File(...)):
+    """
+    Direct forensic image analysis endpoint (Zero Case Pre-requisite):
+    Analyzes uploaded image for content safety, deepfake probability,
+    AI diffusion synthesis, localized manipulation, and perceptual hashes.
+    """
+    allowed_types = ["image/jpeg", "image/png", "image/webp", "image/jpg"]
+    if file.content_type and file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Only JPEG, PNG and WEBP images are allowed")
+
+    os.makedirs("uploads", exist_ok=True)
+    temp_filename = f"scan_{uuid.uuid4()}_{file.filename or 'upload.jpg'}"
+    temp_path = os.path.join("uploads", temp_filename)
+
+    try:
+        with open(temp_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        result = analyze_image_file(temp_path)
+        return {
+            "status": "success",
+            "filename": file.filename,
+            "phash": result["phash"],
+            "dhash": result.get("dhash", result["phash"]),
+            "sha256": result.get("sha256", ""),
+            "content_detection": result["content_detection"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Image inspection error: {str(e)}")
+    finally:
+        if os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
+
