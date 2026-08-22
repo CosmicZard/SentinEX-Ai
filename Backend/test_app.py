@@ -11,6 +11,10 @@ from database import init_db
 
 def test_full_pipeline():
     init_db()
+    conn = sqlite3.connect("sentinex.db")
+    conn.execute("DELETE FROM cases WHERE case_number = 'SE-2026-TEST'")
+    conn.commit()
+    conn.close()
     client = TestClient(app)
 
     # 1. Health check

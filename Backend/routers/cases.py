@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 import os
 import shutil
 import uuid
+import sqlite3
 
 from database import get_db, get_sa_db
 import models
@@ -34,20 +35,65 @@ router = APIRouter()
 # ============================================================
 
 @router.get("/stats/summary", response_model=schemas.StatsSummary)
-def get_dashboard_stats(db = Depends(get_db)):
+def get_dashboard_stats(db: sqlite3.Connection = Depends(get_db)):
     """Provides high-level platform statistics for the dashboard."""
     return models.get_stats_summary(db)
 
+@router.get("/", response_model=list[schemas.CaseResponse])
+def get_cases(db: sqlite3.Connection = Depends(get_db)):
+    """Lists all cases with evidence and takedown counts."""
+    return models.get_all_cases(db)
+
+@router.post("/", response_model=schemas.CaseResponse)
+def create_case(case_data: schemas.CaseCreate, db: sqlite3.Connection = Depends(get_db)):
+    """Creates a new case."""
+    if case_data.case_number:
+        cursor = db.cursor()
+        cursor.execute("SELECT id FROM cases WHERE case_number = ?", (case_data.case_number,))
+        if cursor.fetchone():
+            raise HTTPException(status_code=400, detail="Case number already exists")
+    case_id = models.create_case(db, case_data)
+    case = models.get_case_by_id(db, case_id)
+    if not case:
+        raise HTTPException(status_code=500, detail="Failed to create case")
+    return case
+
+@router.get("/{case_id}", response_model=schemas.CaseResponse)
+def get_case(case_id: int, db: sqlite3.Connection = Depends(get_db)):
+    """Fetches details for a single case."""
+    case = models.get_case_by_id(db, case_id)
+    if case is None:
+        raise HTTPException(status_code=404, detail="Case not found")
+    return case
+
+@router.put("/{case_id}", response_model=schemas.CaseResponse)
+def update_case(case_id: int, case_data: schemas.CaseUpdate, db: sqlite3.Connection = Depends(get_db)):
+    """Updates case metadata."""
+    existing = models.get_case_by_id(db, case_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="Case not found")
+    models.update_case(db, case_id, case_data)
+    return models.get_case_by_id(db, case_id)
+
 @router.patch("/{case_id}/status")
-def update_case_status_legacy(case_id: int, body: schemas.CaseStatusUpdate, db = Depends(get_db)):
+def update_case_status_legacy(case_id: int, body: schemas.CaseStatusUpdate, db: sqlite3.Connection = Depends(get_db)):
     """Updates the lifecycle stage of a case."""
     success = models.update_case_status(db, case_id, body.status)
     if not success:
         raise HTTPException(status_code=404, detail="Case not found")
     return {"message": "Case status updated", "id": case_id, "status": body.status}
 
+@router.delete("/{case_id}")
+def delete_case(case_id: int, db: sqlite3.Connection = Depends(get_db)):
+    """Deletes a case and all associated evidence/takedowns/reports."""
+    existing = models.get_case_by_id(db, case_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="Case not found")
+    models.delete_case(db, case_id)
+    return {"message": "Case deleted successfully", "case_id": case_id}
+
 @router.post("/{case_id}/generate-pdf")
-def generate_legal_pdf(case_id: int, victim_alias: str = Query("CONFIDENTIAL_COMPLAINANT"), notes: str = Query(None), db = Depends(get_db)):
+def generate_legal_pdf(case_id: int, victim_alias: str = Query("CONFIDENTIAL_COMPLAINANT"), notes: str = Query(None), db: sqlite3.Connection = Depends(get_db)):
     """Generates a formal, production-grade IT Act Cyber Crime Complaint PDF."""
     try:
         pdf_path = generate_formal_it_act_pdf(db, case_id, victim_alias=victim_alias, custom_notes=notes)
@@ -60,7 +106,7 @@ def generate_legal_pdf(case_id: int, victim_alias: str = Query("CONFIDENTIAL_COM
         raise HTTPException(status_code=500, detail=f"PDF Generation error: {str(e)}")
 
 @router.get("/reports/all")
-def get_all_reports(db = Depends(get_db)):
+def get_all_reports(db: sqlite3.Connection = Depends(get_db)):
     """Lists all generated cybercrime and takedown reports across cases."""
     cursor = db.cursor()
     cursor.execute('''
@@ -71,104 +117,44 @@ def get_all_reports(db = Depends(get_db)):
     ''')
     return [dict(r) for r in cursor.fetchall()]
 
+@router.get("/{case_id}/evidence", response_model=list[schemas.EvidenceResponse])
 @router.get("/{case_id}/legacy-evidence", response_model=list[schemas.EvidenceResponse])
-def get_case_evidence_legacy(case_id: int, db = Depends(get_db)):
+def get_case_evidence_endpoint(case_id: int, db: sqlite3.Connection = Depends(get_db)):
     """Lists preserved evidence items for a case."""
+    case = models.get_case_by_id(db, case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
     return models.get_evidence_by_case(db, case_id)
 
+@router.post("/{case_id}/evidence", response_model=schemas.EvidenceResponse)
 @router.post("/{case_id}/legacy-evidence", response_model=schemas.EvidenceResponse)
-def add_case_evidence_legacy(case_id: int, evidence_data: schemas.EvidenceCreate, db = Depends(get_db)):
+def add_case_evidence_endpoint(case_id: int, evidence_data: schemas.EvidenceCreate, db: sqlite3.Connection = Depends(get_db)):
+    """Adds a preserved evidence item to a case (Zero Raw Upload)."""
     evidence_data.case_id = case_id
     evidence_id = models.add_evidence(db, evidence_data)
     evidence_list = models.get_evidence_by_case(db, case_id)
     for ev in evidence_list:
         if ev["id"] == evidence_id:
             return ev
-    return {"id": evidence_id, "case_id": case_id, "anonymized_phash": evidence_data.anonymized_phash, "source_url": evidence_data.source_url}
+    return {
+        "id": evidence_id,
+        "case_id": case_id,
+        "anonymized_phash": evidence_data.anonymized_phash,
+        "source_url": evidence_data.source_url,
+        "domain": evidence_data.domain,
+        "evidence_type": evidence_data.evidence_type or "image",
+        "confidence": evidence_data.confidence or 0.95,
+        "sha256_checksum": evidence_data.sha256_checksum,
+        "notes": evidence_data.notes
+    }
 
 @router.delete("/evidence/{evidence_id}")
-def delete_evidence_item(evidence_id: int, db = Depends(get_db)):
+def delete_evidence_item(evidence_id: int, db: sqlite3.Connection = Depends(get_db)):
+    """Deletes a specific evidence item."""
     success = models.delete_evidence(db, evidence_id)
     if not success:
         raise HTTPException(status_code=404, detail="Evidence item not found")
     return {"message": f"Evidence {evidence_id} removed"}
-
-
-# ============================================================
-# NEW SQLALCHEMY ENDPOINTS
-# ============================================================
-
-@router.post("/", response_model=CaseResponse)
-def create_case(case: CaseCreate, db: Session = Depends(get_sa_db)):
-    existing_case = db.query(Case).filter(Case.case_number == case.case_number).first()
-    if existing_case:
-        raise HTTPException(status_code=400, detail="Case number already exists")
-    new_case = Case(
-        case_number=case.case_number,
-        title=case.title,
-        description=case.description,
-        source=case.source,
-        status="Under Review"
-    )
-    db.add(new_case)
-    db.commit()
-    db.refresh(new_case)
-    return new_case
-
-@router.get("/")
-def get_cases(db: Session = Depends(get_sa_db)):
-    cases = db.query(Case).order_by(Case.id.desc()).all()
-    return cases
-
-@router.get("/{case_id}", response_model=CaseResponse)
-def get_case(case_id: int, db: Session = Depends(get_sa_db)):
-    case = db.query(Case).filter(Case.id == case_id).first()
-    if case is None:
-        raise HTTPException(status_code=404, detail="Case not found")
-    return case
-
-@router.put("/{case_id}", response_model=CaseResponse)
-def update_case(case_id: int, case_data: CaseUpdate, db: Session = Depends(get_sa_db)):
-    case = db.query(Case).filter(Case.id == case_id).first()
-    if case is None:
-        raise HTTPException(status_code=404, detail="Case not found")
-    if case_data.status is not None:
-        case.status = case_data.status
-    if case_data.title is not None:
-        case.title = case_data.title
-    if case_data.description is not None:
-        case.description = case_data.description
-    if case_data.source is not None:
-        case.source = case_data.source
-    db.commit()
-    db.refresh(case)
-    return case
-
-@router.delete("/{case_id}")
-def delete_case(case_id: int, db: Session = Depends(get_sa_db)):
-    case = db.query(Case).filter(Case.id == case_id).first()
-    if case is None:
-        raise HTTPException(status_code=404, detail="Case not found")
-    
-    images = db.query(Image).filter(Image.case_id == case_id).all()
-    for image in images:
-        if image.file_path and os.path.exists(image.file_path):
-            try: os.remove(image.file_path)
-            except Exception: pass
-        db.query(Fingerprint).filter(Fingerprint.image_id == image.id).delete(synchronize_session=False)
-    
-    db.query(Image).filter(Image.case_id == case_id).delete(synchronize_session=False)
-    
-    videos = db.query(Video).filter(Video.case_id == case_id).all()
-    for video in videos:
-        if video.file_path and os.path.exists(video.file_path):
-            try: os.remove(video.file_path)
-            except Exception: pass
-            
-    db.query(Video).filter(Video.case_id == case_id).delete(synchronize_session=False)
-    db.delete(case)
-    db.commit()
-    return {"message": "Case deleted successfully", "case_id": case_id}
 
 @router.post("/{case_id}/upload")
 def upload_image(case_id: int, file: UploadFile = File(...), db: Session = Depends(get_sa_db)):

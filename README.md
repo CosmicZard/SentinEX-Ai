@@ -35,3 +35,106 @@ SentinEx-AI is an enterprise-grade cybersecurity platform that follows a **Zero-
    - Tracks case progression: `Detected` → `Evidence Saved` → `Report Generated` → `Submitted` → `Under Review` → `Removed` → `Resolved`.
 
 ---
+
+## 🚀 Quick Start Guide
+
+### Prerequisites
+- **Python 3.10+** (tested on Python 3.13)
+- **Node.js 18+** & **npm** (tested on Node v22)
+
+---
+
+### Option 1: 1-Click Launch (Windows)
+Double-click or run:
+```cmd
+start-all.bat
+```
+This automatically starts both the FastAPI backend and the React Vite frontend in separate console windows.
+
+---
+
+### Option 2: Manual Setup & Execution
+
+#### 1. Backend Setup (FastAPI)
+```bash
+# Navigate to Backend folder
+cd Backend
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Start the FastAPI server
+python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
+- **API URL:** `http://localhost:8000`
+- **Interactive Swagger Docs:** `http://localhost:8000/docs`
+
+#### 2. Frontend Setup (React + Vite)
+```bash
+# In a separate terminal, navigate to frontend folder
+cd frontend
+
+# Install Node dependencies
+npm install
+
+# Start Vite Development Server
+npm run dev
+```
+- **Frontend App:** `http://localhost:5173`
+
+---
+
+## 🧪 Verification & Testing
+
+To run the automated backend test suite (testing all 12 pipeline & matrix verification steps):
+```bash
+cd Backend
+python test_app.py
+```
+To run frontend production build verification:
+```bash
+cd frontend
+npm run build
+```
+
+---
+
+## 📂 Project Structure
+
+```
+SentinEX-Ai/
+├── Backend/
+│   ├── main.py                     # FastAPI entry point & CORS configuration
+│   ├── database.py                 # SQLite DB initialization & seed data
+│   ├── models.py                   # Case, Evidence, Takedown models & queries
+│   ├── schemas.py                  # Pydantic data validation schemas
+│   ├── requirements.txt            # Backend dependencies
+│   ├── test_app.py                 # 12-stage automated pipeline & matrix test suite
+│   ├── routers/
+│   │   ├── cases.py                # Cases & evidence vault endpoints
+│   │   ├── search.py               # Reverse pHash Hamming distance search
+│   │   ├── takedowns.py            # Statutory takedown notices & status updates
+│   │   └── analysis.py             # Alert matrix multi-model validation engine
+│   └── services/
+│       ├── legal_pdf_service.py    # IT Act complaint PDF generator (ReportLab)
+│       ├── fingerprint_service.py  # Image pHash / dHash computation
+│       ├── matching_service.py     # Hamming distance calculations
+│       └── content_detection_service.py # Risk & deepfake evaluation
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx                 # Dashboard, navigation & state management
+│   │   ├── AnalyzeImage.jsx        # Client-side image canvas fingerprinting & local heuristics
+│   │   ├── AnalyzeVideo.jsx        # Client-side video frame sampling & scanning
+│   │   ├── CaseWorkspace.jsx       # 7-stage lifecycle case tracker
+│   │   ├── DetectedMatches.jsx     # Reverse threat discovery matches view
+│   │   ├── EvidenceVault.jsx       # Tamper-evident evidence chain-of-custody
+│   │   ├── LegalCenter.jsx         # NCRP / Cyber Crime Cell legal complaint generator
+│   │   ├── TakedownCenter.jsx      # DMCA & IT Rule 3(2)(b) takedown dispatcher
+│   │   └── Reports.jsx             # Generated reports archive
+│   ├── package.json
+│   └── vite.config.js
+├── start-all.bat                    # 1-Click Windows full stack launcher
+├── start-backend.bat                # Backend launcher script
+├── start-frontend.bat               # Frontend launcher script
+└── README.md
+```
