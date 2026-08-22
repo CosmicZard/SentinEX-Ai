@@ -58,66 +58,69 @@ function Reports({ onBack, onToast }) {
       {/* Header Area */}
       <div className="workspace-top">
         <button className="back-button" onClick={onBack}>
-          <i className="fa-solid fa-arrow-left" style={{ marginRight: "6px" }}></i> Back to Dashboard
+          <i className="fa-solid fa-arrow-left"></i> Back to Dashboard
         </button>
         <div>
-          <div className="zero-trust-badge">
-            <span className="dot"></span>
-            OFFICIAL COMPLAINTS & STATUTORY REPORTS: {reports.length} ARCHIVED
+          <div className="breadcrumbs" style={{ marginBottom: "4px" }}>
+            <span>Reports & Filings</span>
+            <span>/</span>
+            <span>{reports.length} Archived Legal Complaints</span>
           </div>
-          <h1>Generated Reports & Legal Filings</h1>
-          <p className="case-id">Access, download, and manage legally formatted cybercrime complaints (IT Act Sec 66E / 67A).</p>
+          <h1 style={{ fontSize: "20px", fontWeight: "700", color: "var(--text-primary)" }}>
+            Generated Reports & Legal Filings
+          </h1>
+          <p style={{ fontSize: "12.5px", color: "var(--text-muted)", marginTop: "2px" }}>
+            Access, download, and manage legally formatted cybercrime complaints (IT Act Sec 66E / 67A).
+          </p>
         </div>
       </div>
 
       {/* Main List Area */}
-      <div className="workspace-card" style={{ width: "100%" }}>
+      <div className="section-container" style={{ width: "100%" }}>
         {/* Search Bar */}
         <input
           type="text"
           placeholder="Search reports by Report ID, Case Number, or Title..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="vault-search-input"
-          style={{ marginBottom: "20px" }}
+          className="form-input"
+          style={{ marginBottom: "16px" }}
         />
 
         {/* The List of Reports */}
         {loading ? (
-          <div className="loading-card"><div className="spinner-cyber"></div><p>Loading generated reports...</p></div>
+          <div style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
+            <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: "20px", marginBottom: "8px" }}></i>
+            <p>Loading generated reports...</p>
+          </div>
         ) : (
           <div className="case-list">
             {filteredReports.map((item) => (
               <div className="case-card" key={item.id}>
                 <div className="case-left">
-                  <div className="case-icon" style={{ background: "#172033", color: "#60a5fa" }}>
+                  <div className="case-icon">
                     <i className="fa-solid fa-file-pdf"></i>
                   </div>
                   <div>
                     <h3>{item.title}</h3>
                     <p>
-                      <b>{item.report_number}</b> · Case: <strong>{item.case_number || `Case #${item.case_id}`}</strong> · Generated: {item.created_at || "Recent"}
+                      <b>{item.report_number}</b> · Case: <strong>{item.case_number || `Case #${item.case_id}`}</strong> · {item.created_at || "Recent"}
                     </p>
-                    <small style={{ color: "#34d399", display: "block", marginTop: "4px" }}>
+                    <small style={{ color: "var(--primary)", display: "block", marginTop: "2px", fontWeight: "600" }}>
                       <i className="fa-solid fa-scale-balanced" style={{ marginRight: "4px" }}></i> {item.statutory_clauses || "IT Act Sec 66E, 67A"}
                     </small>
                   </div>
                 </div>
 
-                <div className="case-middle">
-                  <span className="status evidence" style={{ background: "#064e3b", color: "#34d399" }}>
-                    <i className="fa-solid fa-circle-check" style={{ marginRight: "4px" }}></i> Verified ReportLab PDF
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <span className="badge badge-evidence">
+                    <i className="fa-solid fa-circle-check"></i> PDF Ready
                   </span>
-                </div>
-
-                {/* ACTION BUTTONS */}
-                <div style={{ display: "flex", gap: "10px" }}>
                   <button
-                    className="open-case"
-                    style={{ background: "#1e3a8a", color: "white", borderColor: "#3b82f6" }}
+                    className="btn btn-primary btn-sm"
                     onClick={() => downloadReportPDF(item)}
                   >
-                    <i className="fa-solid fa-download" style={{ marginRight: "6px" }}></i> Download PDF
+                    <i className="fa-solid fa-download"></i> Download PDF
                   </button>
                 </div>
               </div>

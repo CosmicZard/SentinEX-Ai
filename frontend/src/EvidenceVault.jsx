@@ -146,87 +146,85 @@ function EvidenceVault({ caseData, returnPage = "dashboard", onBack, onIssueTake
       </div>
 
       {/* Evidence Table */}
-      <div className="workspace-card" style={{ width: "100%" }}>
-        <div className="section-title-row">
+      <div className="section-container" style={{ width: "100%" }}>
+        <div className="section-header-row">
           <div>
-            <p className="section-label">CHAIN OF CUSTODY</p>
-            <h2>Preserved Forensic Records ({filteredEvidence.length})</h2>
+            <h2 className="section-header-title">Preserved Forensic Records ({filteredEvidence.length})</h2>
+            <p className="section-header-desc">Cryptographic chain-of-custody archive</p>
           </div>
-          <span className="status-badge" style={{ background: "#064e3b", color: "#34d399" }}>
-            <i className="fa-solid fa-shield-halved" style={{ marginRight: "6px" }}></i> SHA-256 Integrity Verified
+          <span className="badge badge-evidence">
+            <i className="fa-solid fa-shield-halved"></i> SHA-256 Validated
           </span>
         </div>
 
         {loading ? (
-          <div className="loading-card">
-            <div className="spinner-cyber"></div>
+          <div style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
+            <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: "20px", marginBottom: "8px" }}></i>
             <p>Loading forensic evidence records...</p>
           </div>
         ) : filteredEvidence.length === 0 ? (
-          <div className="empty-state-card">
-            <div className="empty-icon" style={{ color: "#34d399" }}>
-              <i className="fa-solid fa-box-archive"></i>
-            </div>
-            <h3>No evidence records in vault</h3>
-            <p>Scan media or discover open-web matches to preserve digital proof with cryptographic hashes.</p>
+          <div style={{ textAlign: "center", padding: "36px 16px", color: "var(--text-muted)" }}>
+            <i className="fa-solid fa-box-archive" style={{ fontSize: "28px", color: "var(--primary)", marginBottom: "8px", display: "block" }}></i>
+            <strong style={{ display: "block", color: "var(--text-primary)", marginBottom: "4px" }}>No Evidence Records in Vault</strong>
+            <p style={{ fontSize: "12.5px" }}>Scan media or discover open-web matches to preserve digital proof with cryptographic hashes.</p>
           </div>
         ) : (
-          <div className="evidence-table-wrap">
-            <table className="evidence-table">
+          <div className="table-wrapper">
+            <table className="data-table">
               <thead>
                 <tr>
                   <th>Type</th>
                   <th>Source Domain & Target URL</th>
                   <th>Perceptual Hash</th>
-                  <th>Cryptographic SHA-256 Integrity</th>
+                  <th>SHA-256 Checksum</th>
                   <th>Timestamp</th>
-                  <th>Actions</th>
+                  <th style={{ textAlign: "right" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredEvidence.map((item) => (
                   <tr key={item.id}>
                     <td>
-                      <span className="type-tag">
+                      <span className="badge badge-takedown">
                         {item.evidence_type === "video" ? (
                           <>
-                            <i className="fa-solid fa-video" style={{ marginRight: "4px" }}></i> Video
+                            <i className="fa-solid fa-video"></i> Video
                           </>
                         ) : (
                           <>
-                            <i className="fa-solid fa-image" style={{ marginRight: "4px" }}></i> Image
+                            <i className="fa-solid fa-image"></i> Image
                           </>
                         )}
                       </span>
                     </td>
                     <td>
-                      <strong>{item.domain || "Web Source"}</strong>
-                      <div className="url-cell-text" title={item.source_url}>
+                      <strong style={{ display: "block", color: "var(--text-primary)" }}>{item.domain || "Web Source"}</strong>
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)", maxWidth: "300px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={item.source_url}>
                         {item.source_url}
                       </div>
                     </td>
                     <td>
-                      <code className="hash-code-inline">{item.anonymized_phash}</code>
+                      <code className="hash-pill">{item.anonymized_phash}</code>
                     </td>
                     <td>
-                      <span className="sha-tag" title={item.sha256_checksum}>
+                      <span className="hash-pill" title={item.sha256_checksum}>
                         {item.sha256_checksum ? item.sha256_checksum.substring(0, 16) + "..." : "sha256-verified"}
                       </span>
                     </td>
                     <td>
-                      <small>{item.timestamp ? item.timestamp.split(" ")[0] : "Recent"}</small>
+                      <small style={{ color: "var(--text-muted)" }}>{item.timestamp ? item.timestamp.split(" ")[0] : "Recent"}</small>
                     </td>
-                    <td>
-                      <div className="row-actions">
+                    <td style={{ textAlign: "right" }}>
+                      <div style={{ display: "inline-flex", gap: "6px" }}>
                         <button
-                          className="table-action-btn takedown"
+                          className="btn btn-secondary btn-sm"
                           onClick={() => onIssueTakedown && onIssueTakedown(item)}
                           title="Generate Takedown Notice"
                         >
-                          <i className="fa-solid fa-bullhorn" style={{ marginRight: "4px" }}></i> Takedown
+                          <i className="fa-solid fa-bullhorn"></i> Takedown
                         </button>
                         <button
-                          className="table-action-btn delete"
+                          className="btn btn-danger-subtle btn-sm"
                           onClick={() => handleDeleteEvidence(item.id)}
                           title="Remove Evidence"
                         >

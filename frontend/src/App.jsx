@@ -171,6 +171,7 @@ function App() {
         caseId={selectedCase?.id || 1}
         returnPage={returnPage}
         onBack={() => setPage(returnPage)}
+        onSwitchToVideo={() => navigateToModule("video", returnPage)}
         onSearchTriggered={(hash, res) => navigateToSearch(hash, res, returnPage)}
         onEvidenceSaved={() => {
           loadPlatformData();
@@ -186,6 +187,7 @@ function App() {
         caseId={selectedCase?.id || 1}
         returnPage={returnPage}
         onBack={() => setPage(returnPage)}
+        onSwitchToImage={() => navigateToModule("analyze", returnPage)}
         onSearchTriggered={(hash, res) => navigateToSearch(hash, res, returnPage)}
         onEvidenceSaved={() => {
           loadPlatformData();
@@ -280,22 +282,23 @@ function App() {
       {/* Sidebar Navigation */}
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-icon" style={{ color: "#38bdf8" }}>
+          <div className="brand-icon">
             <i className="fa-solid fa-shield-halved"></i>
           </div>
           <div>
             <span className="brand-title">SentinEx-AI</span>
-            <span className="brand-sub">Zero-Trust NCII Defense</span>
+            <span className="brand-sub">Privacy & NCII Defense</span>
           </div>
         </div>
 
         <nav className="side-nav">
+          <div className="nav-category">Core Workflows</div>
           <a
             className={page === "dashboard" ? "active" : ""}
             href="#"
             onClick={(e) => { e.preventDefault(); navigateToModule("dashboard", "dashboard"); }}
           >
-            <span><i className="fa-solid fa-gauge-high"></i></span> Dashboard
+            <span className="side-nav-left"><i className="fa-solid fa-gauge-high"></i> Overview</span>
           </a>
 
           <a
@@ -303,7 +306,7 @@ function App() {
             href="#"
             onClick={(e) => { e.preventDefault(); navigateToModule("analyze", "dashboard"); }}
           >
-            <span><i className="fa-solid fa-camera-retro"></i></span> Scan Media (Zero-Trust)
+            <span className="side-nav-left"><i className="fa-solid fa-fingerprint"></i> Scan & Fingerprint</span>
           </a>
 
           <a
@@ -311,7 +314,8 @@ function App() {
             href="#"
             onClick={(e) => { e.preventDefault(); navigateToModule("matches", "dashboard"); }}
           >
-            <span><i className="fa-solid fa-globe"></i></span> Discovered Matches
+            <span className="side-nav-left"><i className="fa-solid fa-globe"></i> Threat Matches</span>
+            {stats.total_matches > 0 && <span className="nav-count-badge">{stats.total_matches}</span>}
           </a>
 
           <a
@@ -319,15 +323,18 @@ function App() {
             href="#"
             onClick={(e) => { e.preventDefault(); navigateToModule("evidence", "dashboard"); }}
           >
-            <span><i className="fa-solid fa-box-archive"></i></span> Evidence Vault ({stats.evidence_items})
+            <span className="side-nav-left"><i className="fa-solid fa-box-archive"></i> Evidence Vault</span>
+            {stats.evidence_items > 0 && <span className="nav-count-badge">{stats.evidence_items}</span>}
           </a>
 
+          <div className="nav-category" style={{ marginTop: "10px" }}>Legal & Enforcement</div>
           <a
             className={page === "takedowns" ? "active" : ""}
             href="#"
             onClick={(e) => { e.preventDefault(); navigateToModule("takedowns", "dashboard"); }}
           >
-            <span><i className="fa-solid fa-bullhorn"></i></span> Takedown Center ({stats.takedowns_active})
+            <span className="side-nav-left"><i className="fa-solid fa-bullhorn"></i> Takedown Center</span>
+            {stats.takedowns_active > 0 && <span className="nav-count-badge">{stats.takedowns_active}</span>}
           </a>
 
           <a
@@ -335,17 +342,17 @@ function App() {
             href="#"
             onClick={(e) => { e.preventDefault(); navigateToModule("legal", "dashboard"); }}
           >
-            <span><i className="fa-solid fa-scale-balanced"></i></span> Legal & IT Act Portal
+            <span className="side-nav-left"><i className="fa-solid fa-scale-balanced"></i> IT Act Filings</span>
           </a>
 
-          <div className="nav-divider"></div>
-
+          <div className="nav-category" style={{ marginTop: "10px" }}>Management</div>
           <a
             className={page === "my-cases" ? "active" : ""}
             href="#"
             onClick={(e) => { e.preventDefault(); navigateToModule("my-cases", "dashboard"); }}
           >
-            <span><i className="fa-solid fa-folder-open"></i></span> My Cases ({myCases.length})
+            <span className="side-nav-left"><i className="fa-solid fa-folder-open"></i> Cases</span>
+            <span className="nav-count-badge">{myCases.length}</span>
           </a>
 
           <a
@@ -353,19 +360,18 @@ function App() {
             href="#"
             onClick={(e) => { e.preventDefault(); navigateToModule("reports", "dashboard"); }}
           >
-            <span><i className="fa-solid fa-file-shield"></i></span> Reports Archive ({stats.reports_generated})
+            <span className="side-nav-left"><i className="fa-solid fa-file-shield"></i> Reports Archive</span>
+            {stats.reports_generated > 0 && <span className="nav-count-badge">{stats.reports_generated}</span>}
           </a>
         </nav>
 
         <div className="sidebar-bottom">
-          <div className="zero-trust-guard">
-            <span className="guard-icon" style={{ color: "#34d399" }}>
-              <i className="fa-solid fa-shield-virus"></i>
-            </span>
-            <div>
-              <strong>Zero-Trust Guard Active</strong>
-              <small>0 Raw Media Bytes Stored</small>
+          <div className="system-status-indicator">
+            <div className="status-left">
+              <span className="status-dot-static"></span>
+              <span>Client Sandbox</span>
             </div>
+            <span className="status-tag-subtle">0 Uploads</span>
           </div>
         </div>
       </aside>
@@ -375,125 +381,147 @@ function App() {
         {/* Topbar */}
         <header className="topbar">
           <div>
-            <p className="welcome-small">PRIVACY-FIRST NCII DETECTION & LEGAL TAKEDOWN SUITE</p>
-            <h1>Security Command Dashboard</h1>
+            <div className="breadcrumbs">
+              <span>SentinEx Platform</span>
+              <span>/</span>
+              <span>Dashboard</span>
+            </div>
+            <h1 className="topbar-title">Investigation Overview</h1>
           </div>
-          <div className="profile">
-            <div className="zero-trust-pill">
-              <span className="live-dot"></span>
-              Client-Side Engine Online
-            </div>
-            <div className="avatar" style={{ color: "#60a5fa" }}>
-              <i className="fa-solid fa-user-shield"></i>
-            </div>
+          <div className="topbar-actions">
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => navigateToModule("analyze", "dashboard")}
+            >
+              <i className="fa-solid fa-fingerprint"></i> Quick Scan
+            </button>
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => navigateToModule("create-case", "dashboard")}
+            >
+              <i className="fa-solid fa-plus"></i> New Investigation
+            </button>
           </div>
         </header>
 
-        {/* Hero Welcome & Privacy Guarantee Card */}
-        <section className="welcome-card">
-          <div>
-            <span className="secure-tag">
-              <i className="fa-solid fa-lock" style={{ marginRight: "6px" }}></i>
-              Zero-Knowledge Client Architecture
-            </span>
-            <h2>Protecting Intimate Privacy Without Compromise</h2>
-            <p>
-              SentinEx-AI empowers victims of non-consensual image sharing to discover leaked copies, 
-              preserve tamper-evident digital proof, issue 24-hour statutory takedowns, and prepare NCRP cybercrime complaints. 
-              <b>Your original media never leaves your device.</b>
-            </p>
-            <div className="welcome-btn-row">
-              <button className="create-button" onClick={() => navigateToModule("create-case", "dashboard")}>
-                <i className="fa-solid fa-plus" style={{ marginRight: "8px" }}></i>
-                Create New Case
-              </button>
+        {/* Metrics Ribbon */}
+        <section className="metrics-ribbon">
+          <div className="metric-kpi-card" onClick={() => navigateToModule("my-cases", "dashboard")}>
+            <div className="kpi-header">
+              <span className="kpi-label">Active Cases</span>
+              <span className="kpi-icon"><i className="fa-solid fa-folder-open"></i></span>
             </div>
+            <div className="kpi-value">{stats.active_cases}</div>
+            <div className="kpi-sub">Total {myCases.length} registered</div>
           </div>
-          <div className="shield" style={{ color: "#3b82f6" }}>
-            <i className="fa-solid fa-shield-halved"></i>
+
+          <div className="metric-kpi-card" onClick={() => navigateToModule("matches", "dashboard")}>
+            <div className="kpi-header">
+              <span className="kpi-label">Threat Matches</span>
+              <span className="kpi-icon" style={{ color: "#d97706" }}><i className="fa-solid fa-globe"></i></span>
+            </div>
+            <div className="kpi-value" style={{ color: "#d97706" }}>{stats.total_matches > 0 ? stats.total_matches + 3 : 0}</div>
+            <div className="kpi-sub">Across indexed hosts</div>
+          </div>
+
+          <div className="metric-kpi-card" onClick={() => navigateToModule("evidence", "dashboard")}>
+            <div className="kpi-header">
+              <span className="kpi-label">Evidence Vault</span>
+              <span className="kpi-icon" style={{ color: "#059669" }}><i className="fa-solid fa-box-archive"></i></span>
+            </div>
+            <div className="kpi-value" style={{ color: "#059669" }}>{stats.evidence_items}</div>
+            <div className="kpi-sub">SHA-256 sealed items</div>
+          </div>
+
+          <div className="metric-kpi-card" onClick={() => navigateToModule("takedowns", "dashboard")}>
+            <div className="kpi-header">
+              <span className="kpi-label">Active Takedowns</span>
+              <span className="kpi-icon" style={{ color: "#dc2626" }}><i className="fa-solid fa-bullhorn"></i></span>
+            </div>
+            <div className="kpi-value" style={{ color: "#dc2626" }}>{stats.takedowns_active}</div>
+            <div className="kpi-sub">24-hr removal demands</div>
+          </div>
+
+          <div className="metric-kpi-card" onClick={() => navigateToModule("reports", "dashboard")}>
+            <div className="kpi-header">
+              <span className="kpi-label">IT Act Filings</span>
+              <span className="kpi-icon" style={{ color: "#7c3aed" }}><i className="fa-solid fa-scale-balanced"></i></span>
+            </div>
+            <div className="kpi-value" style={{ color: "#7c3aed" }}>{stats.reports_generated}</div>
+            <div className="kpi-sub">NCRP legal packages</div>
           </div>
         </section>
 
-        {/* Stats Grid */}
-        <section className="stats-grid">
-          <div className="stat-card" onClick={() => navigateToModule("my-cases", "dashboard")}>
-            <span className="stat-icon" style={{ background: "#172554", color: "#60a5fa" }}>
-              <i className="fa-solid fa-folder-open"></i>
-            </span>
-            <div>
-              <p>Active Cases</p>
-              <strong>{stats.active_cases}</strong>
+        {/* Quick Workflow Launchers */}
+        <div className="section-header-row" style={{ marginTop: "8px" }}>
+          <div>
+            <h2 className="section-header-title">Investigation Workflows</h2>
+            <p className="section-header-desc">Zero-knowledge tools for evidence preservation and removal</p>
+          </div>
+        </div>
+
+        <section className="workflow-grid">
+          <div className="workflow-card" onClick={() => navigateToModule("analyze", "dashboard")}>
+            <div className="workflow-icon-wrap">
+              <i className="fa-solid fa-camera"></i>
             </div>
+            <h3>Scan Image Locally</h3>
+            <p>Compute perceptual hashes (pHash) and detect deepfake synthesis without uploading files.</p>
+            <span className="workflow-card-action">Launch Scanner <i className="fa-solid fa-arrow-right"></i></span>
           </div>
 
-          <div className="stat-card" onClick={() => navigateToModule("matches", "dashboard")}>
-            <span className="stat-icon" style={{ background: "#451a03", color: "#f59e0b" }}>
+          <div className="workflow-card" onClick={() => navigateToModule("video", "dashboard")}>
+            <div className="workflow-icon-wrap" style={{ background: "#f3e8ff", borderColor: "#d8b4fe", color: "#7c3aed" }}>
+              <i className="fa-solid fa-film"></i>
+            </div>
+            <h3>Scan Video Stream</h3>
+            <p>Sample video keyframes in-browser to identify face swaps, boundary artifacts, and motion anomalies.</p>
+            <span className="workflow-card-action" style={{ color: "#7c3aed" }}>Launch Video Inspector <i className="fa-solid fa-arrow-right"></i></span>
+          </div>
+
+          <div className="workflow-card" onClick={() => navigateToModule("matches", "dashboard")}>
+            <div className="workflow-icon-wrap" style={{ background: "#fffbeb", borderColor: "#fde68a", color: "#d97706" }}>
               <i className="fa-solid fa-magnifying-glass"></i>
-            </span>
-            <div>
-              <p>Potential Matches</p>
-              <strong>{stats.total_matches > 0 ? stats.total_matches + 3 : 0}</strong>
             </div>
+            <h3>Threat Discovery</h3>
+            <p>Query open-web repositories and cyberlockers using anonymized perceptual hash digests.</p>
+            <span className="workflow-card-action" style={{ color: "#d97706" }}>Review Matches <i className="fa-solid fa-arrow-right"></i></span>
           </div>
 
-          <div className="stat-card" onClick={() => navigateToModule("evidence", "dashboard")}>
-            <span className="stat-icon" style={{ background: "#064e3b", color: "#34d399" }}>
-              <i className="fa-solid fa-vault"></i>
-            </span>
-            <div>
-              <p>Preserved Evidence</p>
-              <strong>{stats.evidence_items} Items</strong>
+          <div className="workflow-card" onClick={() => navigateToModule("takedowns", "dashboard")}>
+            <div className="workflow-icon-wrap" style={{ background: "#fef2f2", borderColor: "#fecaca", color: "#dc2626" }}>
+              <i className="fa-solid fa-bullhorn"></i>
             </div>
-          </div>
-
-          <div className="stat-card" onClick={() => navigateToModule("takedowns", "dashboard")}>
-            <span className="stat-icon" style={{ background: "#4c0519", color: "#fb7185" }}>
-              <i className="fa-solid fa-triangle-exclamation"></i>
-            </span>
-            <div>
-              <p>Active Takedowns</p>
-              <strong>{stats.takedowns_active}</strong>
-            </div>
-          </div>
-
-          <div className="stat-card" onClick={() => navigateToModule("legal", "dashboard")}>
-            <span className="stat-icon" style={{ background: "#311042", color: "#c084fc" }}>
-              <i className="fa-solid fa-scale-balanced"></i>
-            </span>
-            <div>
-              <p>IT Act Filings</p>
-              <strong>{stats.reports_generated}</strong>
-            </div>
+            <h3>Issue 24-Hr Takedown</h3>
+            <p>Draft and dispatch formal statutory removal notices under IT Rules 2021 Rule 3(2)(b).</p>
+            <span className="workflow-card-action" style={{ color: "#dc2626" }}>Open Takedown Hub <i className="fa-solid fa-arrow-right"></i></span>
           </div>
         </section>
 
         {/* Active Cases Section */}
-        <section className="cases-section">
-          <div className="section-title">
+        <section className="section-container" style={{ marginTop: "24px" }}>
+          <div className="section-header-row">
             <div>
-              <p className="section-label">CASE MANAGEMENT</p>
-              <h2>Recent Investigations</h2>
+              <h2 className="section-header-title">Recent Case Workspaces</h2>
+              <p className="section-header-desc">Track active evidence lockers and intermediary correspondence</p>
             </div>
-            <button className="view-button" onClick={() => navigateToModule("my-cases", "dashboard")}>
+            <button className="btn btn-secondary btn-sm" onClick={() => navigateToModule("my-cases", "dashboard")}>
               View All ({myCases.length}) <i className="fa-solid fa-arrow-right" style={{ marginLeft: "4px" }}></i>
             </button>
           </div>
 
           <div className="case-list">
             {myCases.length === 0 ? (
-              <div className="empty-state-card">
-                <span className="empty-state-icon">
-                  <i className="fa-solid fa-inbox"></i>
-                </span>
-                <h3>No Active Investigations Found</h3>
-                <p>Create your first secure case workspace to scan, detect, and preserve forensic evidence without exposing raw media.</p>
-                <button className="create-button" onClick={() => navigateToModule("create-case", "dashboard")} style={{ marginTop: "6px" }}>
-                  <i className="fa-solid fa-plus" style={{ marginRight: "8px" }}></i>
-                  Create Your First Case
+              <div style={{ textAlign: "center", padding: "32px 16px", color: "var(--text-muted)" }}>
+                <i className="fa-solid fa-folder-open" style={{ fontSize: "28px", marginBottom: "8px", display: "block" }}></i>
+                <strong style={{ display: "block", color: "var(--text-primary)", marginBottom: "4px" }}>No Active Investigations</strong>
+                <p style={{ fontSize: "12.5px", marginBottom: "12px" }}>Create a case workspace to organize evidence, matches, and legal takedown notices.</p>
+                <button className="btn btn-primary btn-sm" onClick={() => navigateToModule("create-case", "dashboard")}>
+                  <i className="fa-solid fa-plus"></i> Create Case
                 </button>
               </div>
             ) : (
-              myCases.slice(0, 3).map((item) => (
+              myCases.slice(0, 4).map((item) => (
                 <div className="case-card" key={item.id}>
                   <div className="case-left">
                     <div className="case-icon">
@@ -502,30 +530,24 @@ function App() {
                     <div>
                       <h3>{item.title}</h3>
                       <p>
-                        <b>{item.case_number}</b> · Severity: <span className={`risk-tag ${item.risk_level?.toLowerCase() || 'medium'}`}>{item.risk_level || "Medium"}</span>
+                        <b>{item.case_number}</b> · Severity: <span className={`risk-pill risk-${item.risk_level?.toLowerCase() || 'medium'}`}>{item.risk_level || "Medium"}</span> · {item.created_at || "Recent"}
                       </p>
                     </div>
                   </div>
 
-                  <div className="case-middle">
-                    <span className={`status ${item.status?.toLowerCase().replace(' ', '-') || 'detected'}`}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                    <span className="badge badge-evidence">
                       {item.status || "Detected"}
                     </span>
-                    <span className="match-count">
-                      {item.evidence_count || item.matches || 0} evidence record{(item.evidence_count || item.matches) !== 1 ? "s" : ""}
-                    </span>
-                  </div>
-
-                  <div style={{ display: "flex", gap: "10px" }}>
                     <button
-                      className="open-case"
+                      className="btn btn-secondary btn-sm"
                       onClick={() => {
                         setSelectedCase(item);
                         setReturnPage("dashboard");
                         setPage("workspace");
                       }}
                     >
-                      Open Workspace <i className="fa-solid fa-arrow-right" style={{ marginLeft: "6px" }}></i>
+                      Open <i className="fa-solid fa-arrow-right" style={{ marginLeft: "4px" }}></i>
                     </button>
                   </div>
                 </div>
@@ -535,16 +557,15 @@ function App() {
         </section>
 
         {/* Legal & Privacy Notice */}
-        <div className="privacy-notice">
-          <span style={{ color: "#38bdf8", fontSize: "20px" }}>
+        <div className="privacy-notice" style={{ marginTop: "16px" }}>
+          <span style={{ color: "var(--primary)", fontSize: "16px" }}>
             <i className="fa-solid fa-shield-halved"></i>
           </span>
           <div>
-            <strong>Legal & Safety Framework (India IT Act, 2000)</strong>
+            <strong>Statutory Framework & Privacy Guarantee</strong>
             <p>
-              Non-consensual intimate image sharing is punishable under Sections 66E, 67, and 67A of the Information Technology Act, 2000. 
-              Rule 3(2)(b) of the Intermediary Guidelines mandates intermediaries disable access within 24 hours. 
-              All data processed in SentinEx-AI respects zero-knowledge principles.
+              Non-consensual image sharing is punishable under Sections 66E, 67, and 67A of the Information Technology Act, 2000. 
+              Rule 3(2)(b) of the Intermediary Guidelines mandates 24-hour intermediary removal. All visual fingerprinting runs 100% locally in your browser memory.
             </p>
           </div>
         </div>

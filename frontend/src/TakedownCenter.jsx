@@ -178,15 +178,18 @@ SentinEx-AI Case Security ID: ${caseData?.case_number || "SE-2026-VERIFIED"}`;
       {/* Top Header */}
       <div className="workspace-top">
         <button className="back-button" onClick={onBack}>
-          <i className="fa-solid fa-arrow-left" style={{ marginRight: "6px" }}></i> Back to {returnPage === "workspace" ? "Workspace" : "Dashboard"}
+          <i className="fa-solid fa-arrow-left"></i> Back to {returnPage === "workspace" ? "Workspace" : "Dashboard"}
         </button>
         <div>
-          <div className="zero-trust-badge">
-            <span className="dot"></span>
-            TAKEDOWN CENTER: 24-HOUR MANDATORY INTERMEDIARY ENFORCEMENT
+          <div className="breadcrumbs" style={{ marginBottom: "4px" }}>
+            <span>Takedown Center</span>
+            <span>/</span>
+            <span>24-Hour Statutory Intermediary Removal</span>
           </div>
-          <h1>Automated Takedown Center & Notice Hub</h1>
-          <p className="case-id">
+          <h1 style={{ fontSize: "20px", fontWeight: "700", color: "var(--text-primary)" }}>
+            Automated Takedown Center & Notice Hub
+          </h1>
+          <p style={{ fontSize: "12.5px", color: "var(--text-muted)", marginTop: "2px" }}>
             {caseData ? `Case: ${caseData.title} (${caseData.case_number})` : "General Takedown Operations"}
           </p>
         </div>
@@ -200,8 +203,8 @@ SentinEx-AI Case Security ID: ${caseData?.case_number || "SE-2026-VERIFIED"}`;
               <p className="section-label">TAKEDOWN BUILDER</p>
               <h2>Generate Statutory Takedown Demand</h2>
             </div>
-            <span className="status-badge" style={{ background: "#991b1b", color: "#fecaca" }}>
-              <i className="fa-solid fa-stopwatch" style={{ marginRight: "6px" }}></i> 24-Hour Removal Rule
+            <span className="badge badge-takedown">
+              <i className="fa-solid fa-stopwatch"></i> 24-Hour Removal Rule
             </span>
           </div>
 
@@ -277,25 +280,25 @@ SentinEx-AI Case Security ID: ${caseData?.case_number || "SE-2026-VERIFIED"}`;
             />
           </div>
 
-          <div className="takedown-btn-row">
-            <button className="takedown-action-btn copy" onClick={copyNotice}>
-              <i className="fa-solid fa-copy" style={{ marginRight: "6px" }}></i> Copy Notice
+          <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
+            <button className="btn btn-secondary" onClick={copyNotice}>
+              <i className="fa-solid fa-copy"></i> Copy Notice Text
             </button>
-            <button className="takedown-action-btn email" onClick={sendEmail}>
-              <i className="fa-solid fa-envelope" style={{ marginRight: "6px" }}></i> Open Mail Client
+            <button className="btn btn-secondary" onClick={sendEmail}>
+              <i className="fa-solid fa-envelope"></i> Open Mail Client
             </button>
             <button
-              className="takedown-action-btn save"
+              className="btn btn-primary"
               onClick={handleSaveTakedown}
               disabled={isSaving}
             >
               {isSaving ? (
                 <>
-                  <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: "6px" }}></i> Saving...
+                  <i className="fa-solid fa-spinner fa-spin"></i> Logging Notice...
                 </>
               ) : (
                 <>
-                  <i className="fa-solid fa-box-archive" style={{ marginRight: "6px" }}></i> Log in Case Tracker
+                  <i className="fa-solid fa-box-archive"></i> Log in Case Tracker
                 </>
               )}
             </button>
@@ -303,27 +306,28 @@ SentinEx-AI Case Security ID: ${caseData?.case_number || "SE-2026-VERIFIED"}`;
         </section>
 
         {/* Active Takedown Tracker Table */}
-        <section className="workspace-card" style={{ marginTop: "25px" }}>
-          <div className="section-title-row">
+        <section className="section-container" style={{ marginTop: "24px" }}>
+          <div className="section-header-row">
             <div>
-              <p className="section-label">LIFECYCLE TRACKING</p>
-              <h2>Active Takedown Requests ({takedowns.length})</h2>
+              <h2 className="section-header-title">Active Takedown Requests ({takedowns.length})</h2>
+              <p className="section-header-desc">Track compliance status across target hosts</p>
             </div>
           </div>
 
           {loading ? (
-            <div className="loading-card"><div className="spinner-cyber"></div><p>Loading takedowns...</p></div>
+            <div style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
+              <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: "20px", marginBottom: "8px" }}></i>
+              <p>Loading takedowns...</p>
+            </div>
           ) : takedowns.length === 0 ? (
-            <div className="empty-state-card">
-              <div className="empty-icon" style={{ color: "#ef4444" }}>
-                <i className="fa-solid fa-bullhorn"></i>
-              </div>
-              <h3>No takedowns logged for this case</h3>
-              <p>Use the generator above to create and track removal requests sent to hosting providers.</p>
+            <div style={{ textAlign: "center", padding: "36px 16px", color: "var(--text-muted)" }}>
+              <i className="fa-solid fa-bullhorn" style={{ fontSize: "28px", color: "var(--primary)", marginBottom: "8px", display: "block" }}></i>
+              <strong style={{ display: "block", color: "var(--text-primary)", marginBottom: "4px" }}>No Takedowns Logged</strong>
+              <p style={{ fontSize: "12.5px" }}>Use the generator above to create and track removal requests sent to hosting providers.</p>
             </div>
           ) : (
-            <div className="evidence-table-wrap">
-              <table className="evidence-table">
+            <div className="table-wrapper">
+              <table className="data-table">
                 <thead>
                   <tr>
                     <th>ID</th>
@@ -338,12 +342,12 @@ SentinEx-AI Case Security ID: ${caseData?.case_number || "SE-2026-VERIFIED"}`;
                     <tr key={t.id}>
                       <td><strong>#{t.id}</strong></td>
                       <td>
-                        <strong>{t.hosting_provider}</strong>
-                        <div className="url-cell-text">{t.target_url}</div>
+                        <strong style={{ display: "block", color: "var(--text-primary)" }}>{t.hosting_provider}</strong>
+                        <div style={{ fontSize: "12px", color: "var(--text-muted)", maxWidth: "280px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.target_url}</div>
                       </td>
-                      <td><small>{t.provider_email}</small></td>
+                      <td><small style={{ color: "var(--text-muted)" }}>{t.provider_email}</small></td>
                       <td>
-                        <span className={`status-pill ${t.status.toLowerCase().replace(' ', '-')}`}>
+                        <span className={`badge ${t.status === "Removed" || t.status === "Resolved" ? "badge-resolved" : "badge-takedown"}`}>
                           {t.status}
                         </span>
                       </td>
@@ -351,7 +355,7 @@ SentinEx-AI Case Security ID: ${caseData?.case_number || "SE-2026-VERIFIED"}`;
                         <select
                           value={t.status}
                           onChange={(e) => handleStatusChange(t.id, e.target.value)}
-                          className="status-select-inline"
+                          className="stage-select-compact"
                         >
                           <option value="Draft">Draft</option>
                           <option value="Sent">Sent</option>

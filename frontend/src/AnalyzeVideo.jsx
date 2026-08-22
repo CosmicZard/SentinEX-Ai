@@ -4,7 +4,7 @@ import { detectLocalManipulation, evaluateAlertMatrix } from "./utils/localManip
 
 const API_BASE = "http://localhost:8000";
 
-function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTriggered, onEvidenceSaved }) {
+function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTriggered, onEvidenceSaved, onSwitchToImage }) {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
@@ -14,12 +14,22 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
   const [savingEvidence, setSavingEvidence] = useState(false);
   const [evidenceSaved, setEvidenceSaved] = useState(false);
 
+  function isVideoFile(f) {
+    if (!f) return false;
+    return (f.type && f.type.startsWith("video/")) || /\.(mp4|webm|mov|mkv|avi|m4v|ogv)$/i.test(f.name || "");
+  }
+
   function handleFile(e) {
     const selectedFile = e.target.files[0];
     if (!selectedFile) return;
 
-    if (!selectedFile.type.startsWith("video/")) {
-      alert("Please upload a valid video file (MP4, WEBM, MOV).");
+    if (selectedFile.type && selectedFile.type.startsWith("image/") && onSwitchToImage) {
+      onSwitchToImage();
+      return;
+    }
+
+    if (!isVideoFile(selectedFile)) {
+      alert("Please upload a valid video file (MP4, WEBM, MOV, MKV).");
       return;
     }
 
@@ -32,7 +42,14 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
   function handleDrop(e) {
     e.preventDefault();
     const droppedFile = e.dataTransfer.files[0];
-    if (!droppedFile || !droppedFile.type.startsWith("video/")) {
+    if (!droppedFile) return;
+
+    if (droppedFile.type && droppedFile.type.startsWith("image/") && onSwitchToImage) {
+      onSwitchToImage();
+      return;
+    }
+
+    if (!isVideoFile(droppedFile)) {
       alert("Please drop a valid video file.");
       return;
     }
@@ -57,6 +74,8 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
     setProgress(5);
     setStatusText("Loading video into client memory sandbox...");
 
+    let videoBlobUrl = null;
+
     try {
       // Step 1: Compute overall cryptographic SHA-256 integrity token locally
       const sha256 = await computeSHA256(file);
@@ -64,18 +83,49 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
       setStatusText("Computed file SHA-256 evidence integrity digest...");
 
       // Step 2: Decode video in-memory
+      videoBlobUrl = URL.createObjectURL(file);
       const videoEl = document.createElement("video");
-      videoEl.src = URL.createObjectURL(file);
+      videoEl.src = videoBlobUrl;
       videoEl.muted = true;
       videoEl.playsInline = true;
+      videoEl.preload = "auto";
 
       await new Promise((resolve, reject) => {
-        videoEl.onloadedmetadata = () => resolve();
-        videoEl.onerror = () => reject(new Error("Failed to decode video in browser sandbox."));
+        let settled = false;
+        const timer = setTimeout(() => {
+          if (!settled) {
+            settled = true;
+            resolve();
+          }
+        }, 4000);
+
+        videoEl.onloadedmetadata = () => {
+          if (!settled) {
+            settled = true;
+            clearTimeout(timer);
+            resolve();
+          }
+        };
+        videoEl.onloadeddata = () => {
+          if (!settled) {
+            settled = true;
+            clearTimeout(timer);
+            resolve();
+          }
+        };
+        videoEl.onerror = () => {
+          if (!settled) {
+            settled = true;
+            clearTimeout(timer);
+            reject(new Error("Failed to decode video in browser sandbox."));
+          }
+        };
+        videoEl.load();
       });
 
-      const duration = videoEl.duration || 10;
-      const numFrames = Math.min(8, Math.max(5, Math.floor(duration / 2)));
+      const rawDuration = videoEl.duration;
+      const duration = (rawDuration && !isNaN(rawDuration) && isFinite(rawDuration) && rawDuration > 0) ? rawDuration : 10;
+      const numFrames = Math.min(8, Math.max(4, Math.floor(duration / 2)));
       const timestamps = [];
       for (let i = 1; i <= numFrames; i++) {
         timestamps.push((duration / (numFrames + 1)) * i);
@@ -104,14 +154,44 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
         setProgress(15 + Math.round((i / numFrames) * 65));
 
         await new Promise((resolve) => {
-          videoEl.currentTime = time;
-          videoEl.onseeked = () => resolve();
+          let resolved = false;
+          const seekTimeout = setTimeout(() => {
+            if (!resolved) {
+              resolved = true;
+              resolve();
+            }
+          }, 1500);
+
+          videoEl.onseeked = () => {
+            if (!resolved) {
+              resolved = true;
+              clearTimeout(seekTimeout);
+              resolve();
+            }
+          };
+          videoEl.onerror = () => {
+            if (!resolved) {
+              resolved = true;
+              clearTimeout(seekTimeout);
+              resolve();
+            }
+          };
+
+          try {
+            videoEl.currentTime = time;
+          } catch (e) {
+            if (!resolved) {
+              resolved = true;
+              clearTimeout(seekTimeout);
+              resolve();
+            }
+          }
         });
 
         ctx.drawImage(videoEl, 0, 0, 160, 160);
         const frameHash = await computeLocalPerceptualHash(canvas);
         const frameReport = await detectLocalManipulation(canvas);
-        const thumbnail = canvas.toDataURL("image/jpeg", 0.5);
+        const thumbnail = canvas.toDataURL("image/jpeg", 0.6);
 
         const isSuspicious = frameReport.deepfakeRisk === "High" || 
                              frameReport.deepfakeRisk === "Critical" || 
@@ -162,7 +242,7 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
       await new Promise((r) => setTimeout(r, 300));
 
       const compositePhash = `vid_${sha256.substring(0, 8)}_${analyzedFrames[0]?.phash || "0000000000000000"}`;
-      const avgAuthenticity = Math.round(totalAuthenticity / analyzedFrames.length);
+      const avgAuthenticity = analyzedFrames.length > 0 ? Math.round(totalAuthenticity / analyzedFrames.length) : 85;
       const temporalConsistency = (98.4 - (suspiciousTimestamps.length * 2.2)).toFixed(1);
 
       // Step 3: Query threat index
@@ -235,6 +315,13 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
       console.error("Video analysis error:", err);
       alert("Error analyzing video locally: " + err.message);
     } finally {
+      if (videoBlobUrl) {
+        try {
+          URL.revokeObjectURL(videoBlobUrl);
+        } catch (e) {
+          // ignore
+        }
+      }
       setAnalyzing(false);
     }
   }
@@ -307,84 +394,101 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
             </span>
           </div>
 
-          <p className="analyze-description">
-            Video frames are decoded into memory inside your browser. SentinEx AI analyzes frame transitions, 
+          {onSwitchToImage && (
+            <div className="segmented-control" style={{ margin: "12px 0 16px" }}>
+              <button
+                type="button"
+                className="segmented-btn"
+                onClick={onSwitchToImage}
+              >
+                <i className="fa-solid fa-image"></i> Switch to Image Scan
+              </button>
+              <button
+                type="button"
+                className="segmented-btn active"
+              >
+                <i className="fa-solid fa-video"></i> Video Stream Inspection
+              </button>
+            </div>
+          )}
+
+          <p style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "16px", lineHeight: "1.5" }}>
+            Video keyframes are extracted into browser memory. SentinEx AI analyzes frame transitions, 
             blending artifacts, and computes sequential hashes without ever transmitting raw video files.
           </p>
 
           {!file ? (
             <div
-              className="drop-zone"
+              className="dropzone-container"
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
             >
-              <div className="upload-icon" style={{ color: "#a855f7" }}>
-                <i className="fa-solid fa-video"></i>
+              <div className="dropzone-icon">
+                <i className="fa-solid fa-film"></i>
               </div>
-              <h3>Drop private video clip here to scan</h3>
-              <p>or select a video from your device for sandboxed analysis</p>
+              <h3 className="dropzone-title">Select or drag video clip to inspect</h3>
+              <p className="dropzone-sub">Extracts and inspects keyframes 100% in-browser</p>
 
-              <label className="upload-button">
-                <i className="fa-solid fa-arrow-up-from-bracket" style={{ marginRight: "8px" }}></i> Choose Video
-                <input
-                  type="file"
-                  accept="video/mp4,video/quicktime,video/webm"
-                  onChange={handleFile}
-                  hidden
-                />
-              </label>
-              <small>Supported: MP4, MOV, WEBM · Processed 100% In-Browser</small>
+              <div style={{ marginTop: "14px" }}>
+                <label className="btn btn-primary btn-sm" style={{ cursor: "pointer" }}>
+                  <i className="fa-solid fa-folder-open"></i> Choose Video File
+                  <input
+                    type="file"
+                    accept="video/mp4,video/quicktime,video/webm"
+                    onChange={handleFile}
+                    hidden
+                  />
+                </label>
+              </div>
+              <span className="file-spec-tag">MP4, MOV, WEBM · Processed 100% In-Browser</span>
             </div>
           ) : (
             <div className="image-preview-area">
-              <div className="preview-header">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
                 <div>
-                  <strong>{file.name}</strong>
-                  <p>{(file.size / (1024 * 1024)).toFixed(1)} MB · Client Memory Sandbox</p>
+                  <strong style={{ fontSize: "13.5px", color: "var(--text-primary)" }}>{file.name}</strong>
+                  <p style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>{(file.size / (1024 * 1024)).toFixed(1)} MB · In-Memory Video Sandbox</p>
                 </div>
-                <button className="remove-button" onClick={removeVideo}>
-                  <i className="fa-solid fa-xmark" style={{ marginRight: "4px" }}></i> Remove
+                <button className="btn btn-secondary btn-sm" onClick={removeVideo}>
+                  <i className="fa-solid fa-xmark"></i> Remove
                 </button>
               </div>
 
-              <div className="preview-container">
+              {/* CLEAN VIDEO VIEWPORT */}
+              <div className="media-viewport">
                 <video
                   src={preview}
-                  className="preview-image"
                   controls
                   muted
                   style={{ maxHeight: "300px", width: "100%" }}
                 />
-
-                {analyzing && (
-                  <div className="scan-overlay">
-                    <div className="scan-line"></div>
-                    <div className="bounding-box"></div>
-                    <div className="radar-grid"></div>
-                  </div>
-                )}
               </div>
 
               {!result && !analyzing && (
-                <button className="analyze-button pulse-btn" onClick={analyzeVideoLocally}>
-                  <i className="fa-solid fa-fingerprint" style={{ marginRight: "8px" }}></i> Scan Video Frames & Compute Fingerprint
+                <button
+                  className="btn btn-primary"
+                  onClick={analyzeVideoLocally}
+                  style={{ width: "100%", padding: "10px", marginTop: "8px" }}
+                >
+                  <i className="fa-solid fa-fingerprint"></i> Sample Keyframes & Compute Sequential Fingerprint
                 </button>
               )}
 
+              {/* PROGRESS CHECKLIST */}
               {analyzing && (
-                <div className="loading-state">
-                  <div className="spinner-cyber"></div>
-                  <strong className="loading-title">
-                    [ EXTRACTING & INSPECTING KEYFRAMES ]
-                  </strong>
-                  <p className="loading-sub">{statusText} ({progress}%)</p>
+                <div className="analysis-progress-card">
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "600", fontSize: "13px", color: "var(--primary)" }}>
+                    <i className="fa-solid fa-spinner fa-spin"></i>
+                    <span>Extracting & Inspecting Keyframes ({progress}%)...</span>
+                  </div>
+                  <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>{statusText}</p>
                 </div>
               )}
             </div>
           )}
 
-          <div className="analysis-privacy" style={{ marginTop: file ? "20px" : "0" }}>
-            <span style={{ color: "#34d399", fontSize: "18px" }}>
+          <div className="privacy-notice" style={{ marginTop: file ? "18px" : "0" }}>
+            <span style={{ color: "var(--primary)", fontSize: "16px" }}>
               <i className="fa-solid fa-lock"></i>
             </span>
             <div>
@@ -398,7 +502,7 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
         </section>
 
         <aside className="analysis-info">
-          <div className="info-icon" style={{ color: "#60a5fa" }}>
+          <div className="info-icon" style={{ color: "#059669" }}>
             <i className="fa-solid fa-shield-halved"></i>
           </div>
           <h3>Video Inspection Pipeline</h3>
@@ -450,31 +554,31 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
           </div>
 
           <div className={`verdict-hero-banner ${result.alertClass || "moderate"}`}>
-            <div>
+            <div style={{ flex: 1 }}>
               <span className={`verdict-badge ${result.alertClass || "moderate"}`}>
                 {result.overallVerdict}
               </span>
-              <h3 style={{ fontSize: "20px", margin: "10px 0 6px", color: "var(--text-color)" }}>
+              <h3 style={{ fontSize: "18px", fontWeight: "700", margin: "8px 0 6px", color: "var(--text-primary)" }}>
                 {result.alertBadgeText}
               </h3>
-              <p style={{ fontSize: "13.5px", color: "#cbd5e1", maxWidth: "650px", lineHeight: "1.5" }}>
+              <p style={{ fontSize: "13px", color: "var(--text-secondary)", maxWidth: "620px", lineHeight: "1.5" }}>
                 {result.alertDescription}
               </p>
             </div>
 
             <div className="authenticity-score-box">
-              <span style={{ fontSize: "11px", fontWeight: "700", textTransform: "uppercase", color: "#94a3b8", letterSpacing: "0.5px" }}>
+              <span style={{ fontSize: "11px", fontWeight: "700", textTransform: "uppercase", color: "#64748b", letterSpacing: "0.5px" }}>
                 Authenticity Score
               </span>
               <strong
                 className="score-number"
                 style={{
-                  color: result.authenticityScore >= 75 ? "#10b981" : result.authenticityScore >= 45 ? "#f59e0b" : "#ef4444"
+                  color: result.authenticityScore >= 75 ? "#059669" : result.authenticityScore >= 45 ? "#d97706" : "#dc2626"
                 }}
               >
                 {result.authenticityScore}%
               </strong>
-              <small style={{ fontSize: "11px", color: "#94a3b8" }}>
+              <small style={{ fontSize: "11px", color: "#64748b" }}>
                 {result.authenticityScore >= 75 ? "Organic Video Stream" : result.authenticityScore >= 45 ? "Altered Frame Sequence" : "Deepfake / Synthetic Video"}
               </small>
               <div className="authenticity-bar">
@@ -482,7 +586,7 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
                   className="authenticity-bar-fill"
                   style={{
                     width: `${result.authenticityScore}%`,
-                    background: result.authenticityScore >= 75 ? "#10b981" : result.authenticityScore >= 45 ? "#f59e0b" : "#ef4444"
+                    background: result.authenticityScore >= 75 ? "#059669" : result.authenticityScore >= 45 ? "#d97706" : "#dc2626"
                   }}
                 ></div>
               </div>
@@ -493,7 +597,7 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
             <div className="forensic-spec-card">
               <div className="forensic-card-header">
                 <span className="forensic-card-label">File & Duration</span>
-                <span style={{ fontSize: "16px", color: "#a855f7" }}><i className="fa-solid fa-film"></i></span>
+                <span style={{ fontSize: "16px", color: "#7c3aed" }}><i className="fa-solid fa-film"></i></span>
               </div>
               <strong className="forensic-card-value">{result.fileType}</strong>
               <p className="forensic-card-sub">
@@ -504,14 +608,14 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
             <div className="forensic-spec-card">
               <div className="forensic-card-header">
                 <span className="forensic-card-label">Frame Inspection</span>
-                <span style={{ fontSize: "16px", color: "#38bdf8" }}><i className="fa-solid fa-images"></i></span>
+                <span style={{ fontSize: "16px", color: "#059669" }}><i className="fa-solid fa-images"></i></span>
               </div>
               <strong className="forensic-card-value">
                 {result.framesAnalyzed} Frames Sampled
               </strong>
               <p
                 className="forensic-card-sub"
-                style={{ color: result.suspiciousFrames > 0 ? "#f87171" : "#34d399" }}
+                style={{ color: result.suspiciousFrames > 0 ? "#dc2626" : "#059669" }}
               >
                 {result.suspiciousFrames > 0 ? `⚠️ ${result.suspiciousFrames} Suspicious Frame(s) Flagged` : "✓ All sampled frames clean"}
               </p>
@@ -520,12 +624,12 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
             <div className="forensic-spec-card">
               <div className="forensic-card-header">
                 <span className="forensic-card-label">Content Safety Rating</span>
-                <span style={{ fontSize: "16px", color: "#34d399" }}><i className="fa-solid fa-shield-halved"></i></span>
+                <span style={{ fontSize: "16px", color: "#059669" }}><i className="fa-solid fa-shield-halved"></i></span>
               </div>
               <strong
                 className="forensic-card-value"
                 style={{
-                  color: result.contentSafety === "SFW" ? "#34d399" : result.contentSafety === "NSFW" ? "#ef4444" : "#f59e0b"
+                  color: result.contentSafety === "SFW" ? "#059669" : result.contentSafety === "NSFW" ? "#dc2626" : "#d97706"
                 }}
               >
                 {result.contentSafety === "SFW" ? "SFW (Safe for Work)" : result.contentSafety === "NSFW" ? "NSFW (Explicit Content)" : "Sensitive Content"}
@@ -538,12 +642,12 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
             <div className="forensic-spec-card">
               <div className="forensic-card-header">
                 <span className="forensic-card-label">Deepfake & Synthesis Risk</span>
-                <span style={{ fontSize: "16px", color: "#f87171" }}><i className="fa-solid fa-masks-theater"></i></span>
+                <span style={{ fontSize: "16px", color: "#dc2626" }}><i className="fa-solid fa-masks-theater"></i></span>
               </div>
               <strong
                 className="forensic-card-value"
                 style={{
-                  color: result.deepfakeRisk === "Critical" || result.deepfakeRisk === "High" ? "#f87171" : "#34d399"
+                  color: result.deepfakeRisk === "Critical" || result.deepfakeRisk === "High" ? "#dc2626" : "#059669"
                 }}
               >
                 {result.deepfakeRisk} Risk ({result.deepfakeScore}%)
@@ -556,9 +660,9 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
             <div className="forensic-spec-card">
               <div className="forensic-card-header">
                 <span className="forensic-card-label">Temporal Consistency</span>
-                <span style={{ fontSize: "16px", color: "#38bdf8" }}><i className="fa-solid fa-stopwatch"></i></span>
+                <span style={{ fontSize: "16px", color: "#059669" }}><i className="fa-solid fa-stopwatch"></i></span>
               </div>
-              <strong className="forensic-card-value" style={{ color: "#38bdf8" }}>
+              <strong className="forensic-card-value" style={{ color: "#059669" }}>
                 {result.temporalConsistency}
               </strong>
               <p className="forensic-card-sub">
@@ -569,7 +673,7 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
             <div className="forensic-spec-card">
               <div className="forensic-card-header">
                 <span className="forensic-card-label">Composite Video Token</span>
-                <span style={{ fontSize: "16px", color: "#facc15" }}><i className="fa-solid fa-fingerprint"></i></span>
+                <span style={{ fontSize: "16px", color: "#059669" }}><i className="fa-solid fa-fingerprint"></i></span>
               </div>
               <strong className="hash-code">{result.videoHash}</strong>
               <p className="forensic-card-sub">
@@ -580,7 +684,7 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
             <div className="forensic-spec-card">
               <div className="forensic-card-header">
                 <span className="forensic-card-label">Subject & Biometrics</span>
-                <span style={{ fontSize: "16px", color: "#c084fc" }}><i className="fa-solid fa-user-check"></i></span>
+                <span style={{ fontSize: "16px", color: "#7c3aed" }}><i className="fa-solid fa-user-check"></i></span>
               </div>
               <strong className="forensic-card-value">
                 {result.humanDetected ? "Human Subject Detected" : "No Human Detected"}
@@ -593,12 +697,12 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
             <div className="forensic-spec-card">
               <div className="forensic-card-header">
                 <span className="forensic-card-label">Discovered Web Copies</span>
-                <span style={{ fontSize: "16px", color: "#ef4444" }}><i className="fa-solid fa-globe"></i></span>
+                <span style={{ fontSize: "16px", color: "#dc2626" }}><i className="fa-solid fa-globe"></i></span>
               </div>
               <strong
                 className="forensic-card-value"
                 style={{
-                  color: result.matches > 0 ? "#ef4444" : "#34d399"
+                  color: result.matches > 0 ? "#dc2626" : "#059669"
                 }}
               >
                 {result.matches} Match{result.matches !== 1 ? "es" : ""} Found
@@ -610,11 +714,11 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
           </div>
 
           {result.suspiciousTimestamps && result.suspiciousTimestamps.length > 0 && (
-            <div className="video-timeline-section" style={{ borderLeft: "4px solid #ef4444" }}>
-              <h4 style={{ color: "#fca5a5", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
+            <div className="video-timeline-section" style={{ borderLeft: "4px solid #dc2626" }}>
+              <h4 style={{ color: "#991b1b", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
                 <i className="fa-solid fa-triangle-exclamation"></i> Suspicious Keyframe Timestamps ({result.suspiciousTimestamps.length} Flagged)
               </h4>
-              <p style={{ fontSize: "12.5px", color: "#cbd5e1", margin: "6px 0 10px" }}>
+              <p style={{ fontSize: "12.5px", color: "#475569", margin: "6px 0 10px" }}>
                 Anomalies detected in facial blending or content safety thresholds at the following video offsets:
               </p>
               <div className="suspicious-timestamps-list">
@@ -630,9 +734,9 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
               <div className="section-title-row">
                 <div>
                   <p className="section-label">PER-FRAME FORENSIC BREAKDOWN</p>
-                  <h3 style={{ fontSize: "17px", color: "var(--text-color)" }}>Frame-by-Frame Risk Timeline</h3>
+                  <h3 style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-primary)" }}>Frame-by-Frame Risk Timeline</h3>
                 </div>
-                <span style={{ fontSize: "12px", color: "#94a3b8" }}>
+                <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
                   {result.frames.length} Sampled Intervals
                 </span>
               </div>
@@ -646,22 +750,22 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
                     </div>
 
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11.5px" }}>
-                      <span style={{ color: "#94a3b8" }}>Safety:</span>
-                      <strong style={{ color: f.contentSafety === "SFW" ? "#34d399" : f.contentSafety === "NSFW" ? "#ef4444" : "#f59e0b" }}>
+                      <span style={{ color: "#64748b" }}>Safety:</span>
+                      <strong style={{ color: f.contentSafety === "SFW" ? "#059669" : f.contentSafety === "NSFW" ? "#dc2626" : "#d97706" }}>
                         {f.contentSafety}
                       </strong>
                     </div>
 
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11.5px" }}>
-                      <span style={{ color: "#94a3b8" }}>Deepfake:</span>
-                      <strong style={{ color: f.deepfakeRisk === "Critical" || f.deepfakeRisk === "High" ? "#f87171" : "#34d399" }}>
+                      <span style={{ color: "#64748b" }}>Deepfake:</span>
+                      <strong style={{ color: f.deepfakeRisk === "Critical" || f.deepfakeRisk === "High" ? "#dc2626" : "#059669" }}>
                         {f.deepfakeRisk}
                       </strong>
                     </div>
 
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11.5px" }}>
-                      <span style={{ color: "#94a3b8" }}>Authenticity:</span>
-                      <strong style={{ color: f.authenticityScore >= 75 ? "#34d399" : f.authenticityScore >= 45 ? "#f59e0b" : "#ef4444" }}>
+                      <span style={{ color: "#64748b" }}>Authenticity:</span>
+                      <strong style={{ color: f.authenticityScore >= 75 ? "#059669" : f.authenticityScore >= 45 ? "#d97706" : "#dc2626" }}>
                         {f.authenticityScore}%
                       </strong>
                     </div>
@@ -672,7 +776,7 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
           )}
 
           <div className="statutory-box">
-            <h4><i className="fa-solid fa-scale-balanced" style={{ marginRight: "8px", color: "#c084fc" }}></i> Suggested IT Act & Legal Provisions (Advisory)</h4>
+            <h4><i className="fa-solid fa-scale-balanced" style={{ marginRight: "8px", color: "#059669" }}></i> Suggested IT Act & Legal Provisions (Advisory)</h4>
             <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "4px 0 10px" }}>
               Suggested statutory references for incident reporting and legal notices:
             </p>
@@ -683,33 +787,33 @@ function AnalyzeVideo({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
             </div>
           </div>
 
-          <div className="result-actions-row">
+          <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
             <button
-              className="save-evidence-btn"
+              className="btn btn-primary"
               onClick={saveVideoFingerprintToCase}
               disabled={savingEvidence || evidenceSaved}
             >
               {evidenceSaved ? (
                 <>
-                  <i className="fa-solid fa-check" style={{ marginRight: "6px" }}></i> Saved to Case Evidence
+                  <i className="fa-solid fa-check"></i> Saved to Evidence Vault
                 </>
               ) : savingEvidence ? (
                 <>
-                  <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: "6px" }}></i> Saving...
+                  <i className="fa-solid fa-spinner fa-spin"></i> Saving...
                 </>
               ) : (
                 <>
-                  <i className="fa-solid fa-box-archive" style={{ marginRight: "8px" }}></i> Preserve Video Evidence in Vault
+                  <i className="fa-solid fa-box-archive"></i> Preserve Video Evidence in Vault
                 </>
               )}
             </button>
 
             {onSearchTriggered && (
               <button
-                className="search-matches-btn"
+                className="btn btn-secondary"
                 onClick={() => onSearchTriggered(result.videoHash, result.matchedResults)}
               >
-                <i className="fa-solid fa-globe" style={{ marginRight: "8px" }}></i> View {result.matches} Discovered Matches <i className="fa-solid fa-arrow-right" style={{ marginLeft: "6px" }}></i>
+                <i className="fa-solid fa-globe"></i> View {result.matches} Discovered Matches <i className="fa-solid fa-arrow-right" style={{ marginLeft: "4px" }}></i>
               </button>
             )}
           </div>

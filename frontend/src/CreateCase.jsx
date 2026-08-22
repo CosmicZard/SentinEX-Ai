@@ -41,15 +41,18 @@ function CreateCase({ onBack, onCreated }) {
     <div className="case-page">
       <div className="case-header">
         <button className="back-button" onClick={onBack}>
-          <i className="fa-solid fa-arrow-left" style={{ marginRight: "6px" }}></i> Back to Dashboard
+          <i className="fa-solid fa-arrow-left"></i> Back to Dashboard
         </button>
 
         <div>
-          <div className="zero-trust-badge">
-            <span className="dot"></span>
-            CONFIDENTIAL INVESTIGATION VAULT
+          <div className="breadcrumbs" style={{ marginBottom: "4px" }}>
+            <span>Case Management</span>
+            <span>/</span>
+            <span>New Investigation</span>
           </div>
-          <h1>Create New Case Workspace</h1>
+          <h1 style={{ fontSize: "20px", fontWeight: "700", color: "var(--text-primary)" }}>
+            Create New Case Workspace
+          </h1>
         </div>
       </div>
 
@@ -122,7 +125,7 @@ function CreateCase({ onBack, onCreated }) {
           </div>
 
           <div className="privacy-box">
-            <span style={{ color: "#34d399", fontSize: "18px" }}>
+            <span style={{ color: "#059669", fontSize: "18px" }}>
               <i className="fa-solid fa-lock"></i>
             </span>
             <div>
@@ -153,7 +156,7 @@ function CreateCase({ onBack, onCreated }) {
         </form>
 
         <div className="case-info-card">
-          <div className="info-icon" style={{ color: "#60a5fa" }}>
+          <div className="info-icon" style={{ color: "#059669" }}>
             <i className="fa-solid fa-shield-halved"></i>
           </div>
           <h3>Investigation Workflow</h3>

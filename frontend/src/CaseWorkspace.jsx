@@ -172,38 +172,33 @@ function CaseWorkspace({
       </div>
 
       {/* =========================================================
-          INCIDENT LIFECYCLE & TAKEDOWN PROGRESSION (DARK SOC THEME)
+          INCIDENT LIFECYCLE & TAKEDOWN PROGRESSION (LINEAR-STYLE)
       ========================================================= */}
-      <div className="workspace-card lifecycle-progression-card" style={{ width: "100%", marginBottom: "25px" }}>
-        <div className="progression-header">
-          <div>
-            <h2 className="progression-title">Automated DMCA & Statutory Takedown</h2>
-            <p className="progression-subtitle">
-              Zero-trust legal enforcement & content removal tracking.
-            </p>
-          </div>
-          <div className="status-dropdown-wrap">
-            <span className="live-status-pill">
-              <span className="status-pulse-dot"></span>
-              Stage: <strong>{currentCase?.status || "Detected"}</strong>
-            </span>
+      <div className="pipeline-card" style={{ width: "100%" }}>
+        <div className="pipeline-header">
+          <span className="pipeline-title">
+            <i className="fa-solid fa-timeline" style={{ color: "var(--primary)" }}></i>
+            Incident Lifecycle Pipeline
+          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Stage:</span>
             <select
               value={currentCase?.status || "Detected"}
               onChange={(e) => advanceStage(e.target.value)}
-              className="stage-selector-dropdown"
+              className="stage-select-compact"
               title="Change active case stage"
             >
               {STAGES.map((st) => (
                 <option key={st} value={st}>
-                  Set Stage: {st}
+                  {st}
                 </option>
               ))}
             </select>
           </div>
         </div>
 
-        {/* TOP HORIZONTAL STEPPER FLOW */}
-        <div className="flow-stepper-row">
+        {/* COMPACT LINEAR-STYLE STEPPER FLOW */}
+        <div className="pipeline-steps-row">
           {FLOW_STEPS.map((step, idx) => {
             const isDone = currentFlowIndex > idx;
             const isCurr = currentFlowIndex === idx;
@@ -211,25 +206,25 @@ function CaseWorkspace({
             return (
               <React.Fragment key={step.id}>
                 <div
-                  className={`flow-node-item ${isDone ? "is-done" : isCurr ? "is-curr" : "is-pending"}`}
+                  className={`pipeline-step ${isDone ? "is-done" : isCurr ? "is-curr" : "is-pending"}`}
                   onClick={() => advanceStage(step.stageKey)}
-                  title={`Click to set stage to: ${step.stageKey}`}
+                  title={`Click to set stage: ${step.stageKey}`}
                 >
-                  <div className="flow-circle-badge">
+                  <div className="step-badge">
                     {isDone ? (
                       <i className="fa-solid fa-check"></i>
                     ) : (
-                      <i className={step.icon}></i>
+                      <span>{idx + 1}</span>
                     )}
                   </div>
-                  <strong className="flow-node-title">{step.title}</strong>
-                  <span className="flow-node-sub">{step.subtitle}</span>
+                  <div>
+                    <div className="step-text-title">{step.title}</div>
+                    <small style={{ fontSize: "11px", color: "var(--text-muted)", display: "block" }}>{step.subtitle}</small>
+                  </div>
                 </div>
 
                 {idx < FLOW_STEPS.length - 1 && (
-                  <div className={`flow-arrow-separator ${currentFlowIndex > idx ? "is-done" : ""}`}>
-                    <i className="fa-solid fa-arrow-right"></i>
-                  </div>
+                  <div className={`step-divider ${currentFlowIndex > idx ? "is-done" : ""}`} />
                 )}
               </React.Fragment>
             );
@@ -238,27 +233,27 @@ function CaseWorkspace({
       </div>
 
       {/* Case Metrics Cards */}
-      <div className="case-summary" style={{ width: "100%", marginBottom: "25px" }}>
+      <div className="case-summary" style={{ width: "100%", marginBottom: "20px" }}>
         <div className="summary-card">
           <span>Current Stage</span>
-          <strong className="status-badge" style={{ fontSize: "14px" }}>
+          <strong style={{ fontSize: "16px", color: "var(--primary)" }}>
             {currentCase?.status || "Detected"}
           </strong>
         </div>
         <div className="summary-card" onClick={onOpenMatches} style={{ cursor: "pointer" }}>
           <span>Discovered Matches</span>
-          <strong style={{ color: "#38bdf8" }}>{evidenceList.length > 0 ? evidenceList.length + 2 : 0}</strong>
-          <small style={{ color: "#94a3b8" }}>View matches <i className="fa-solid fa-arrow-right" style={{ marginLeft: "4px" }}></i></small>
+          <strong style={{ color: "#d97706" }}>{evidenceList.length > 0 ? evidenceList.length + 2 : 0}</strong>
+          <small>View matches <i className="fa-solid fa-arrow-right"></i></small>
         </div>
         <div className="summary-card" onClick={onOpenEvidence} style={{ cursor: "pointer" }}>
           <span>Preserved Evidence</span>
-          <strong style={{ color: "#34d399" }}>{evidenceList.length} Items</strong>
-          <small style={{ color: "#94a3b8" }}>View vault <i className="fa-solid fa-arrow-right" style={{ marginLeft: "4px" }}></i></small>
+          <strong style={{ color: "#059669" }}>{evidenceList.length} Items</strong>
+          <small>View vault <i className="fa-solid fa-arrow-right"></i></small>
         </div>
         <div className="summary-card" onClick={onOpenTakedowns} style={{ cursor: "pointer" }}>
           <span>Takedowns Logged</span>
-          <strong style={{ color: "#f87171" }}>{takedownList.length} Active</strong>
-          <small style={{ color: "#94a3b8" }}>Manage notices <i className="fa-solid fa-arrow-right" style={{ marginLeft: "4px" }}></i></small>
+          <strong style={{ color: "#dc2626" }}>{takedownList.length} Active</strong>
+          <small style={{ color: "#dc2626" }}>Manage notices <i className="fa-solid fa-arrow-right"></i></small>
         </div>
       </div>
 
@@ -275,7 +270,7 @@ function CaseWorkspace({
 
           <div className="analysis-actions">
             <button className="analysis-button" onClick={onAnalyzeImage}>
-              <span><i className="fa-solid fa-image" style={{ color: "#38bdf8" }}></i></span>
+              <span><i className="fa-solid fa-image" style={{ color: "#059669" }}></i></span>
               <div>
                 <strong>Scan Image Locally</strong>
                 <small>Compute pHash & deepfake check</small>
@@ -283,7 +278,7 @@ function CaseWorkspace({
             </button>
 
             <button className="analysis-button" onClick={onAnalyzeVideo}>
-              <span><i className="fa-solid fa-video" style={{ color: "#a855f7" }}></i></span>
+              <span><i className="fa-solid fa-video" style={{ color: "#7c3aed" }}></i></span>
               <div>
                 <strong>Scan Video Locally</strong>
                 <small>Keyframe temporal anomaly check</small>
@@ -302,7 +297,7 @@ function CaseWorkspace({
 
           <div className="analysis-actions">
             <button className="analysis-button" onClick={onOpenMatches}>
-              <span><i className="fa-solid fa-globe" style={{ color: "#f59e0b" }}></i></span>
+              <span><i className="fa-solid fa-globe" style={{ color: "#d97706" }}></i></span>
               <div>
                 <strong>Discovered Matches</strong>
                 <small>Review open-web crawler hits</small>
@@ -310,7 +305,7 @@ function CaseWorkspace({
             </button>
 
             <button className="analysis-button" onClick={onOpenEvidence}>
-              <span><i className="fa-solid fa-box-archive" style={{ color: "#10b981" }}></i></span>
+              <span><i className="fa-solid fa-box-archive" style={{ color: "#059669" }}></i></span>
               <div>
                 <strong>Evidence Locker ({evidenceList.length})</strong>
                 <small>Forensic records & export manifest</small>
@@ -328,7 +323,7 @@ function CaseWorkspace({
           </p>
 
           <button className="analysis-button" onClick={onOpenTakedowns} style={{ width: "100%" }}>
-            <span><i className="fa-solid fa-bullhorn" style={{ color: "#ef4444" }}></i></span>
+            <span><i className="fa-solid fa-bullhorn" style={{ color: "#dc2626" }}></i></span>
             <div>
               <strong>Open Takedown Center</strong>
               <small>Draft, dispatch, and track provider removal status</small>
@@ -344,34 +339,33 @@ function CaseWorkspace({
             Compile case evidence into an official complaint for the National Cyber Crime Reporting Portal (IT Act Sec 66E, 67, 67A).
           </p>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "15px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             <button
-              className="action-btn legal-btn"
+              className="btn btn-secondary"
               onClick={onOpenLegalCenter}
-              style={{ padding: "12px", textAlign: "left", display: "flex", alignItems: "center", gap: "10px" }}
+              style={{ justifyContent: "flex-start", padding: "10px 14px", height: "auto" }}
             >
-              <span><i className="fa-solid fa-scale-balanced" style={{ color: "#c084fc" }}></i></span>
-              <div>
-                <strong>Customize Complaint & Statutes</strong>
-                <small style={{ display: "block", color: "#93c5fd" }}>Set anonymity, citations, and details</small>
+              <i className="fa-solid fa-scale-balanced" style={{ color: "#7c3aed", fontSize: "16px" }}></i>
+              <div style={{ textAlign: "left", marginLeft: "6px" }}>
+                <strong style={{ display: "block", fontSize: "13px" }}>Customize Complaint & Statutes</strong>
+                <small style={{ fontSize: "11px", color: "var(--text-muted)" }}>Set anonymity, citations, and incident statement</small>
               </div>
             </button>
 
             <button
-              className="emergency-report-btn"
+              className="btn btn-primary"
               onClick={triggerEmergencyReport}
               disabled={isGenerating}
+              style={{ justifyContent: "flex-start", padding: "10px 14px", height: "auto" }}
             >
-              <span>
-                {isGenerating ? (
-                  <i className="fa-solid fa-spinner fa-spin"></i>
-                ) : (
-                  <i className="fa-solid fa-file-pdf"></i>
-                )}
-              </span>
-              <div>
-                <strong>{isGenerating ? "Compiling legal package..." : "Quick Download NCRP Complaint PDF"}</strong>
-                <small>Generates official ReportLab legal document</small>
+              {isGenerating ? (
+                <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: "16px" }}></i>
+              ) : (
+                <i className="fa-solid fa-file-pdf" style={{ fontSize: "16px" }}></i>
+              )}
+              <div style={{ textAlign: "left", marginLeft: "6px" }}>
+                <strong style={{ display: "block", fontSize: "13px" }}>{isGenerating ? "Compiling legal package..." : "Quick Download NCRP Complaint PDF"}</strong>
+                <small style={{ fontSize: "11px", color: "rgba(255,255,255,0.85)" }}>Generates official ReportLab legal document</small>
               </div>
             </button>
           </div>
@@ -381,7 +375,7 @@ function CaseWorkspace({
       {/* Case Description & Details */}
       <div className="workspace-card" style={{ width: "100%", marginTop: "25px" }}>
         <p className="section-label">CASE DETAILS & NOTES</p>
-        <p style={{ color: "#cbd5e1", lineHeight: "1.6", marginTop: "8px" }}>
+        <p style={{ color: "#334155", lineHeight: "1.6", marginTop: "8px" }}>
           {currentCase?.description || "No notes entered for this investigation."}
         </p>
       </div>

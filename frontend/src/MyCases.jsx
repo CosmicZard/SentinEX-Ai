@@ -20,34 +20,37 @@ function MyCases({ cases, onBack, onOpenCase, onDeleteCase, onCreateNew }) {
     <div className="case-workspace">
       <div className="workspace-top">
         <button className="back-button" onClick={onBack}>
-          <i className="fa-solid fa-arrow-left" style={{ marginRight: "6px" }}></i> Back to Dashboard
+          <i className="fa-solid fa-arrow-left"></i> Back to Dashboard
         </button>
         <div>
-          <div className="zero-trust-badge">
-            <span className="dot"></span>
-            CASE REPOSITORY: {cases.length} ACTIVE INVESTIGATIONS
+          <div className="breadcrumbs" style={{ marginBottom: "4px" }}>
+            <span>Case Repository</span>
+            <span>/</span>
+            <span>{cases.length} Active Investigations</span>
           </div>
-          <h1>My Investigations & Cases</h1>
-          <p className="case-id">Manage, track lifecycle progression, and inspect evidence for all registered cases.</p>
+          <h1 style={{ fontSize: "20px", fontWeight: "700", color: "var(--text-primary)" }}>
+            My Investigations & Cases
+          </h1>
+          <p style={{ fontSize: "12.5px", color: "var(--text-muted)", marginTop: "2px" }}>
+            Manage, track lifecycle progression, and inspect evidence for all registered cases.
+          </p>
         </div>
       </div>
 
-      <div className="workspace-card" style={{ width: "100%" }}>
+      <div className="section-container" style={{ width: "100%" }}>
         {/* Search & Filter Controls */}
-        <div className="mycases-controls-row">
-          <div className="search-input-wrap" style={{ flex: 1 }}>
-            <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
-            <input
-              type="text"
-              placeholder="Search cases by Case ID or Title..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="vault-search-input"
-            />
-          </div>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <input
+            type="text"
+            placeholder="Search cases by Case ID or Title..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="form-input"
+            style={{ flex: 1 }}
+          />
 
-          <button className="create-button" onClick={onCreateNew} style={{ whiteSpace: "nowrap" }}>
-            <i className="fa-solid fa-plus" style={{ marginRight: "6px" }}></i> New Case
+          <button className="btn btn-primary" onClick={onCreateNew} style={{ whiteSpace: "nowrap" }}>
+            <i className="fa-solid fa-plus"></i> New Case
           </button>
         </div>
 
@@ -81,26 +84,20 @@ function MyCases({ cases, onBack, onOpenCase, onDeleteCase, onCreateNew }) {
                 </div>
               </div>
 
-              <div className="case-middle">
-                <span className={`status ${item.status?.toLowerCase().replace(' ', '-') || 'detected'}`}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span className="badge badge-evidence">
                   {item.status || "Detected"}
                 </span>
-                <span className="match-count">
-                  {item.evidence_count || item.matches || 0} evidence item{(item.evidence_count || item.matches) !== 1 ? "s" : ""}
-                </span>
-              </div>
 
-              <div style={{ display: "flex", gap: "10px" }}>
                 <button
-                  className="open-case"
+                  className="btn btn-secondary btn-sm"
                   onClick={() => onOpenCase(item)}
                 >
-                  Open Workspace <i className="fa-solid fa-arrow-right" style={{ marginLeft: "6px" }}></i>
+                  Open <i className="fa-solid fa-arrow-right" style={{ marginLeft: "4px" }}></i>
                 </button>
 
                 <button
-                  className="open-case"
-                  style={{ borderColor: "#ef4444", color: "#ef4444" }}
+                  className="btn btn-danger-subtle btn-sm"
                   onClick={() => {
                     if (window.confirm(`Are you sure you want to permanently delete case ${item.case_number}?`)) {
                       onDeleteCase(item.id);

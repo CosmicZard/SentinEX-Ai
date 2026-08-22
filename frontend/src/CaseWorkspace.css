@@ -1,487 +1,327 @@
-/* =========================
-   CASE WORKSPACE (DARK SOC THEME)
-========================= */
+/* ==========================================================================
+   CaseWorkspace.css — Clean Enterprise Case Investigation Workspace
+   ========================================================================== */
 
 .case-workspace {
   min-height: 100vh;
-  padding: 30px 40px 60px;
-  background: radial-gradient(circle at 70% 0%, #18233d 0%, #080a0f 45%);
-  color: #f5f7fa;
+  padding: 24px 36px 60px;
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
   width: 100%;
   box-sizing: border-box;
 }
 
-/* =========================
-   HEADER
-========================================= */
-
 .workspace-top {
   width: 100%;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
 }
 
-.back-button {
-  display: inline-flex;
+.case-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.case-header-left h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+  margin: 4px 0 6px;
+}
+
+.case-meta-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.case-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ==========================================================================
+   LINEAR-STYLE COMPACT WORKFLOW STEPPER PIPELINE
+   ========================================================================== */
+
+.pipeline-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-xs);
+}
+
+.pipeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.pipeline-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: #94a3b8;
-  font-size: 13.5px;
-  cursor: pointer;
-  padding: 7px 14px;
-  margin-bottom: 18px;
-  transition: all 0.2s ease;
-  font-weight: 600;
-  width: fit-content;
 }
 
-.back-button:hover {
-  background: rgba(255, 255, 255, 0.09);
-  color: #f8fafc;
-  border-color: rgba(255, 255, 255, 0.22);
-  transform: translateX(-3px);
-}
-
-.case-label,
-.section-label {
-  display: block;
-  margin: 0 0 8px;
-  color: #738cff;
+.stage-select-compact {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
   font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--text-primary);
+  outline: none;
+  cursor: pointer;
 }
 
-.workspace-top h1 {
-  margin: 0;
-  font-size: 34px;
-  font-weight: 800;
+.stage-select-compact:focus {
+  border-color: var(--border-focus);
 }
 
-.case-id {
-  margin-top: 8px;
-  color: #718096;
-  font-size: 15px;
-}
-
-/* =========================
-   SUMMARY CARDS
-========================================= */
-
-.case-summary {
-  width: 100%;
-  margin-bottom: 28px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
-}
-
-.summary-card {
-  background: #0d1017;
-  border: 1px solid #222936;
-  border-radius: 14px;
-  padding: 22px 24px;
+/* Linear-style Stepper Flow */
+.pipeline-steps-row {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  overflow-x: auto;
+  padding: 8px 4px;
 }
 
-.summary-card span {
-  color: #7f8899;
-  font-size: 13.5px;
-  margin-bottom: 8px;
+.pipeline-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  transition: background-color 0.15s ease;
+  user-select: none;
+}
+
+.pipeline-step:hover {
+  background-color: var(--bg-subtle);
+}
+
+.step-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+/* Step States */
+.pipeline-step.is-pending .step-badge {
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+}
+
+.pipeline-step.is-pending .step-text-title {
+  color: var(--text-muted);
+  font-size: 12.5px;
   font-weight: 500;
 }
 
-.summary-card strong {
-  font-size: 28px;
-  font-weight: 800;
+.pipeline-step.is-curr .step-badge {
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 0 0 3px var(--bg-emerald-light);
 }
 
-.status-badge {
-  width: fit-content;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 13px !important;
-  background: #202943;
-  color: #9eb1ff;
-  font-weight: 600;
-}
-
-/* =========================
-   MAIN GRID
-========================================= */
-
-.workspace-grid {
-  width: 100%;
-  margin-bottom: 28px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-}
-
-.workspace-card {
-  background: #0d1017;
-  border: 1px solid #252d3b;
-  border-radius: 16px;
-  padding: 32px;
-}
-
-.workspace-card h2 {
-  margin: 10px 0;
-  font-size: 24px;
+.pipeline-step.is-curr .step-text-title {
+  color: var(--primary-active);
+  font-size: 12.5px;
   font-weight: 700;
 }
 
-.workspace-card p {
-  color: #858e9f;
-  font-size: 15px;
-  line-height: 1.65;
-  margin-bottom: 25px;
+.pipeline-step.is-done .step-badge {
+  background: var(--bg-emerald-light);
+  color: var(--primary);
+  border: 1px solid var(--border-emerald);
 }
 
-/* =========================
-   ANALYSIS BUTTONS
-========================================= */
+.pipeline-step.is-done .step-text-title {
+  color: var(--text-primary);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.step-divider {
+  flex: 1;
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 0 8px;
+  min-width: 20px;
+}
+
+.step-divider.is-done {
+  background: var(--border-emerald);
+}
+
+/* ==========================================================================
+   CASE SUMMARY KPI CARDS
+   ========================================================================== */
+
+.case-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.summary-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: border-color 0.15s ease;
+}
+
+.summary-card:hover {
+  border-color: var(--border-medium);
+}
+
+.summary-card span {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.summary-card strong {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.4px;
+}
+
+.summary-card small {
+  font-size: 11.5px;
+  color: var(--primary);
+  font-weight: 600;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ==========================================================================
+   OPERATIONS GRID & ACTION BUTTONS
+   ========================================================================== */
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.workspace-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-xs);
+}
+
+.workspace-card h2 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 4px 0 6px;
+}
+
+.workspace-card p {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
 
 .analysis-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  gap: 10px;
 }
 
 .analysis-button {
-  background: #0b0f16;
-  border: 1px solid #293344;
-  border-radius: 12px;
-  padding: 20px 22px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 12px;
   text-align: left;
-  color: white;
-  transition: all 0.2s ease;
+  color: var(--text-primary);
   cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-xs);
 }
 
-.analysis-button:hover:not(:disabled) {
-  border-color: #6175b7;
-  background: #121824;
-  transform: translateY(-2px);
-}
-
-.analysis-button:disabled {
-  cursor: wait;
+.analysis-button:hover {
+  border-color: var(--border-medium);
+  background: var(--bg-subtle);
+  transform: translateY(-1px);
 }
 
 .analysis-button span {
-  font-size: 28px;
-}
-
-.analysis-button div {
-  flex: 1;
+  font-size: 20px;
 }
 
 .analysis-button strong {
   display: block;
-  font-size: 15.5px;
-  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 2px;
 }
 
 .analysis-button small {
   display: block;
-  color: #737d8e;
-  font-size: 12.5px;
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
-/* =========================
-   LEGAL ACTION SPECIFICS
-========================================= */
-
+/* Legal Card Highlight */
 .legal-action-card {
-  border-left: 4px solid #10b981;
+  border-top: 3px solid var(--primary);
 }
-
-.report-button {
-  width: 100%;
-  margin-top: 10px;
-}
-
-.report-button.generating {
-  background: #121824;
-  border-color: #10b981;
-}
-
-.report-button.generating strong {
-  color: #10b981;
-}
-
-/* =========================
-   PRIVACY BOX
-========================================= */
-
-.privacy-box {
-  width: 100%;
-  display: flex;
-  gap: 16px;
-  padding: 20px 24px;
-  border: 1px solid #252c3a;
-  border-radius: 12px;
-  background: #0c1016;
-}
-
-.privacy-box > span {
-  font-size: 24px;
-}
-
-.privacy-box strong {
-  display: block;
-  font-size: 15px;
-  margin-bottom: 5px;
-}
-
-.privacy-box p {
-  margin: 0;
-  color: #707a8b;
-  font-size: 13.5px;
-  line-height: 1.6;
-}
-
-/* =========================
-   LIFECYCLE PROGRESSION & TAKEDOWN TRACKER (DARK SOC THEME)
-========================================= */
-
-.lifecycle-progression-card {
-  background: radial-gradient(circle at 50% 0%, #0e1626 0%, #070a13 70%);
-  border: 1px solid #1e283d;
-  border-radius: 16px;
-  padding: 28px 32px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-}
-
-.progression-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 28px;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.progression-title {
-  font-size: 20px;
-  font-weight: 800;
-  color: #f8fafc;
-  margin: 0 0 6px;
-  letter-spacing: -0.2px;
-}
-
-.progression-subtitle {
-  font-size: 13.5px;
-  color: #94a3b8;
-  margin: 0;
-}
-
-.status-dropdown-wrap {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.live-status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(6, 78, 59, 0.4);
-  border: 1px solid rgba(16, 185, 129, 0.4);
-  color: #34d399;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 12.5px;
-  font-weight: 700;
-}
-
-.status-pulse-dot {
-  width: 7px;
-  height: 7px;
-  background: #34d399;
-  border-radius: 50%;
-  box-shadow: 0 0 8px #34d399;
-  animation: pulseGlow 1.8s infinite;
-}
-
-.stage-selector-dropdown {
-  background: #111827;
-  border: 1px solid #374151;
-  color: #e5e7eb;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  outline: none;
-  transition: all 0.2s ease;
-}
-
-.stage-selector-dropdown:hover {
-  border-color: #60a5fa;
-}
-
-/* --- HORIZONTAL FLOW ROW --- */
-.flow-stepper-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin: 10px 0 28px;
-  padding: 0 10px;
-  overflow-x: auto;
-}
-
-.flow-node-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  cursor: pointer;
-  min-width: 110px;
-  text-align: center;
-  transition: all 0.25s ease;
-  user-select: none;
-}
-
-.flow-node-item:hover {
-  transform: translateY(-2px);
-}
-
-.flow-circle-badge {
-  width: 62px;
-  height: 62px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  margin-bottom: 12px;
-}
-
-/* Inactive */
-.flow-node-item.is-pending .flow-circle-badge {
-  border: 1.5px solid #232d3f;
-  background: #0d1220;
-  color: #64748b;
-}
-
-.flow-node-item.is-pending .flow-node-title {
-  color: #64748b;
-}
-
-.flow-node-item.is-pending .flow-node-sub {
-  color: #475569;
-}
-
-/* Active / Current */
-.flow-node-item.is-curr .flow-circle-badge {
-  border: 2px solid #38bdf8;
-  background: rgba(56, 189, 248, 0.15);
-  color: #38bdf8;
-  box-shadow: 0 0 24px rgba(56, 189, 248, 0.4);
-  transform: scale(1.08);
-}
-
-.flow-node-item.is-curr .flow-node-title {
-  color: #38bdf8;
-}
-
-.flow-node-item.is-curr .flow-node-sub {
-  color: #cbd5e1;
-}
-
-/* Completed */
-.flow-node-item.is-done .flow-circle-badge {
-  border: 2px solid #10b981;
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-  box-shadow: 0 0 18px rgba(16, 185, 129, 0.3);
-}
-
-.flow-node-item.is-done .flow-node-title {
-  color: #f1f5f9;
-}
-
-.flow-node-item.is-done .flow-node-sub {
-  color: #94a3b8;
-}
-
-.flow-node-title {
-  font-size: 14.5px;
-  font-weight: 700;
-  margin-bottom: 3px;
-  display: block;
-}
-
-.flow-node-sub {
-  font-size: 12px;
-  display: block;
-  max-width: 120px;
-}
-
-.flow-arrow-separator {
-  color: #334155;
-  font-size: 16px;
-  margin: 22px 14px 0;
-  transition: color 0.25s ease;
-}
-
-.flow-arrow-separator.is-done {
-  color: #10b981;
-}
-
-@keyframes pulseGlow {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
-  }
-  70% {
-    transform: scale(1.05);
-    box-shadow: 0 0 0 8px rgba(52, 211, 153, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
-  }
-}
-
-/* =========================
-   RESPONSIVE
-========================= */
 
 @media (max-width: 900px) {
-  .case-summary {
-    grid-template-columns: repeat(2, 1fr);
+  .case-workspace {
+    padding: 16px 20px 40px;
   }
   .workspace-grid {
     grid-template-columns: 1fr;
   }
-  .flow-stepper-row {
-    justify-content: flex-start;
-    gap: 12px;
-  }
-}
-
-@media (max-width: 500px) {
-  .case-workspace {
-    padding: 25px 18px 50px;
-  }
   .analysis-actions {
     grid-template-columns: 1fr;
-  }
-  .lifecycle-progression-card {
-    padding: 20px 16px;
-  }
-  .nested-takedown-tracker {
-    padding: 16px 14px;
   }
 }

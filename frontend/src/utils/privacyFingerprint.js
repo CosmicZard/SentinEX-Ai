@@ -8,70 +8,131 @@
  */
 
 /**
- * Computes a Difference Hash (dHash) from an image File or Blob locally on HTML5 Canvas.
- * @param {File|Blob} file 
+ * Computes a Difference Hash (dHash) from an image File, Blob, HTMLCanvasElement, HTMLImageElement, or HTMLVideoElement locally on HTML5 Canvas.
+ * @param {File|Blob|HTMLCanvasElement|HTMLImageElement|HTMLVideoElement} input 
  * @returns {Promise<string>} 64-bit Hexadecimal perceptual hash string
  */
-export async function computeLocalPerceptualHash(file) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const objectUrl = URL.createObjectURL(file);
+export async function computeLocalPerceptualHash(input) {
+  return new Promise((resolve) => {
+    if (!input) {
+      resolve(generateFallbackHash(null));
+      return;
+    }
 
-    img.onload = () => {
+    // 1. If input is already an HTMLCanvasElement
+    if (typeof HTMLCanvasElement !== "undefined" && input instanceof HTMLCanvasElement) {
       try {
-        // Step 1: Scale image to 9x8 grayscale matrix (72 pixels) for dHash
+        const hash = computeDHashFromCanvas(input);
+        resolve(hash || "d9b23f8e4c1a7650");
+      } catch (err) {
+        resolve(generateFallbackHash(input));
+      }
+      return;
+    }
+
+    // 2. If input is HTMLImageElement or HTMLVideoElement
+    if (
+      (typeof HTMLImageElement !== "undefined" && input instanceof HTMLImageElement) ||
+      (typeof HTMLVideoElement !== "undefined" && input instanceof HTMLVideoElement)
+    ) {
+      try {
         const canvas = document.createElement("canvas");
         canvas.width = 9;
         canvas.height = 8;
         const ctx = canvas.getContext("2d", { willReadFrequently: true });
-
-        ctx.drawImage(img, 0, 0, 9, 8);
-        const imgData = ctx.getImageData(0, 0, 9, 8);
-        const pixels = imgData.data;
-
-        // Convert to grayscale values
-        const gray = [];
-        for (let i = 0; i < pixels.length; i += 4) {
-          const r = pixels[i];
-          const g = pixels[i + 1];
-          const b = pixels[i + 2];
-          // Standard luminance formula
-          gray.push(Math.round(0.299 * r + 0.587 * g + 0.114 * b));
-        }
-
-        // Step 2: Compare adjacent pixels (each row has 8 comparisons = 64 bits total)
-        let binaryHash = "";
-        for (let row = 0; row < 8; row++) {
-          for (let col = 0; col < 8; col++) {
-            const left = gray[row * 9 + col];
-            const right = gray[row * 9 + (col + 1)];
-            binaryHash += left > right ? "1" : "0";
-          }
-        }
-
-        // Step 3: Convert 64-bit binary string into 16-char hex string
-        let hexHash = "";
-        for (let i = 0; i < binaryHash.length; i += 4) {
-          const nibble = binaryHash.substring(i, i + 4);
-          hexHash += parseInt(nibble, 2).toString(16);
-        }
-
-        URL.revokeObjectURL(objectUrl);
-        resolve(hexHash || "d9b23f8e4c1a7650");
+        ctx.drawImage(input, 0, 0, 9, 8);
+        const hash = computeDHashFromCanvas(canvas);
+        resolve(hash || "d9b23f8e4c1a7650");
       } catch (err) {
-        URL.revokeObjectURL(objectUrl);
-        // Fallback robust hash based on file size and name if canvas fails
-        resolve(generateFallbackHash(file));
+        resolve(generateFallbackHash(input));
       }
-    };
+      return;
+    }
 
-    img.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
-      resolve(generateFallbackHash(file));
-    };
+    // 3. If input is File or Blob
+    if (typeof Blob !== "undefined" && (input instanceof Blob || input instanceof File)) {
+      try {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(input);
 
-    img.src = objectUrl;
+        img.onload = () => {
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = 9;
+            canvas.height = 8;
+            const ctx = canvas.getContext("2d", { willReadFrequently: true });
+            ctx.drawImage(img, 0, 0, 9, 8);
+            const hash = computeDHashFromCanvas(canvas);
+            URL.revokeObjectURL(objectUrl);
+            resolve(hash || "d9b23f8e4c1a7650");
+          } catch (err) {
+            URL.revokeObjectURL(objectUrl);
+            resolve(generateFallbackHash(input));
+          }
+        };
+
+        img.onerror = () => {
+          URL.revokeObjectURL(objectUrl);
+          resolve(generateFallbackHash(input));
+        };
+
+        img.src = objectUrl;
+      } catch (err) {
+        resolve(generateFallbackHash(input));
+      }
+      return;
+    }
+
+    // Fallback for any other type
+    resolve(generateFallbackHash(input));
   });
+}
+
+/**
+ * Computes 64-bit dHash directly from a canvas element scaled to 9x8 matrix.
+ * @param {HTMLCanvasElement} sourceCanvas
+ * @returns {string} 16-character hex hash string
+ */
+export function computeDHashFromCanvas(sourceCanvas) {
+  let canvas = sourceCanvas;
+  if (sourceCanvas.width !== 9 || sourceCanvas.height !== 8) {
+    canvas = document.createElement("canvas");
+    canvas.width = 9;
+    canvas.height = 8;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(sourceCanvas, 0, 0, 9, 8);
+  }
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  const imgData = ctx.getImageData(0, 0, 9, 8);
+  const pixels = imgData.data;
+
+  // Step 1: Convert to grayscale values
+  const gray = [];
+  for (let i = 0; i < pixels.length; i += 4) {
+    const r = pixels[i];
+    const g = pixels[i + 1];
+    const b = pixels[i + 2];
+    gray.push(Math.round(0.299 * r + 0.587 * g + 0.114 * b));
+  }
+
+  // Step 2: Compare adjacent pixels (each row has 8 comparisons = 64 bits total)
+  let binaryHash = "";
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const left = gray[row * 9 + col];
+      const right = gray[row * 9 + (col + 1)];
+      binaryHash += left > right ? "1" : "0";
+    }
+  }
+
+  // Step 3: Convert 64-bit binary string into 16-char hex string
+  let hexHash = "";
+  for (let i = 0; i < binaryHash.length; i += 4) {
+    const nibble = binaryHash.substring(i, i + 4);
+    hexHash += parseInt(nibble, 2).toString(16);
+  }
+
+  return hexHash || "d9b23f8e4c1a7650";
 }
 
 /**

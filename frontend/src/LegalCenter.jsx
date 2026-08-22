@@ -187,15 +187,18 @@ Generated via SentinEx-AI Zero-Trust Platform`;
       {/* Top Header */}
       <div className="workspace-top">
         <button className="back-button" onClick={onBack}>
-          <i className="fa-solid fa-arrow-left" style={{ marginRight: "6px" }}></i> Back to {returnPage === "workspace" ? "Workspace" : "Dashboard"}
+          <i className="fa-solid fa-arrow-left"></i> Back to {returnPage === "workspace" ? "Workspace" : "Dashboard"}
         </button>
         <div>
-          <div className="zero-trust-badge">
-            <span className="dot"></span>
-            LEGAL CENTER: STATUTORY IT ACT (SEC 66E / 67A) COMPLAINT PACKAGE
+          <div className="breadcrumbs" style={{ marginBottom: "4px" }}>
+            <span>Legal Center</span>
+            <span>/</span>
+            <span>IT Act Sec 66E / 67A Package</span>
           </div>
-          <h1>Cybercrime Complaint & Legal Package Generator</h1>
-          <p className="case-id">
+          <h1 style={{ fontSize: "20px", fontWeight: "700", color: "var(--text-primary)" }}>
+            Cybercrime Complaint & Legal Package Generator
+          </h1>
+          <p style={{ fontSize: "12.5px", color: "var(--text-muted)", marginTop: "2px" }}>
             {caseData ? `Case: ${caseData.title} (${caseData.case_number})` : "National Cyber Crime Reporting Portal (NCRP) Draft Generator"}
           </p>
         </div>
@@ -209,8 +212,8 @@ Generated via SentinEx-AI Zero-Trust Platform`;
               <p className="section-label">COMPLAINT CONFIGURATOR</p>
               <h2>Incident & Complainant Details</h2>
             </div>
-            <span className="secure-tag">
-              <i className="fa-solid fa-shield-halved" style={{ marginRight: "6px" }}></i> Privacy Shield Active
+            <span className="badge badge-evidence">
+              <i className="fa-solid fa-shield-halved"></i> Privacy Shield Active
             </span>
           </div>
 
@@ -331,32 +334,32 @@ Generated via SentinEx-AI Zero-Trust Platform`;
             />
           </div>
 
-          <div className="legal-btn-row">
+          <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
             <button
-              className="legal-main-btn backend-pdf"
+              className="btn btn-primary"
               onClick={handleDownloadPDF}
               disabled={isGeneratingBackend}
             >
               {isGeneratingBackend ? (
                 <>
-                  <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: "6px" }}></i> Generating Complaint Package...
+                  <i className="fa-solid fa-spinner fa-spin"></i> Generating Package...
                 </>
               ) : (
                 <>
-                  <i className="fa-solid fa-file-pdf" style={{ marginRight: "6px" }}></i> Download NCRP Complaint PDF
+                  <i className="fa-solid fa-file-pdf"></i> Download NCRP Complaint PDF
                 </>
               )}
             </button>
 
-            <button className="legal-main-btn copy-btn" onClick={copyTextDraft}>
-              <i className="fa-solid fa-copy" style={{ marginRight: "6px" }}></i> Copy Complaint Text
+            <button className="btn btn-secondary" onClick={copyTextDraft}>
+              <i className="fa-solid fa-copy"></i> Copy Complaint Text
             </button>
           </div>
         </section>
 
         {/* Right Information & Legal FAQ */}
         <aside className="analysis-info" style={{ marginTop: 0 }}>
-          <div className="info-icon" style={{ color: "#c084fc" }}>
+          <div className="info-icon" style={{ color: "#059669" }}>
             <i className="fa-solid fa-scale-balanced"></i>
           </div>
           <h3>Legal Rights & Filing Guide</h3>

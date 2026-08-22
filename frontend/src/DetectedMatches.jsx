@@ -301,7 +301,7 @@ function DetectedMatches({
                 </div>
                 <div className="detail-item">
                   <span className="detail-label">Designated Abuse Contact</span>
-                  <span className="detail-value" style={{ color: "#60a5fa" }}>{match.abuse_email}</span>
+                  <span className="detail-value" style={{ color: "#059669" }}>{match.abuse_email}</span>
                 </div>
                 <div className="detail-item">
                   <span className="detail-label">Matched Perceptual Hash</span>
@@ -381,7 +381,7 @@ function DetectedMatches({
 
             {/* Privacy Shield Alert */}
             <div className="privacy-shield-box">
-              <div className="shield-icon" style={{ color: "#60a5fa" }}>
+              <div className="shield-icon" style={{ color: "#059669" }}>
                 <i className="fa-solid fa-shield-halved"></i>
               </div>
               <div style={{ flex: 1 }}>
@@ -412,20 +412,18 @@ function DetectedMatches({
               {/* Left: User Media */}
               <div className="compare-card">
                 <div className="compare-card-title">
-                  <span><i className="fa-solid fa-mobile-screen-button"></i></span> User's Sandboxed Fingerprint
+                  <span><i className="fa-solid fa-fingerprint"></i></span> Reference Fingerprint (Local Sandbox)
                 </div>
-                <div className={`media-preview-box ${!privacyUnblurred ? "privacy-blurred" : ""}`}>
-                  <div className="hash-matrix-visual">
-                    <div className="radar-grid"></div>
-                    <div className="scan-line"></div>
-                    <span className="matrix-text">[ LOCAL SANDBOX MEDIA ]</span>
-                    <small>{inspectingMatch.phash.startsWith("vid_") ? "Temporal Video Stream" : "Visual Image Matrix"}</small>
+                <div style={{ background: "var(--bg-canvas)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-md)", padding: "16px", margin: "10px 0" }}>
+                  <div style={{ fontSize: "11px", fontWeight: "600", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "4px" }}>Computed Perceptual Hash</div>
+                  <code style={{ fontFamily: "var(--font-mono)", fontSize: "13px", color: "var(--primary-active)", fontWeight: "600" }}>{inspectingMatch.phash}</code>
+                  <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "8px" }}>
+                    Source: {inspectingMatch.phash.startsWith("vid_") ? "Temporal Video Sequence" : "Visual Canvas Digest (dHash)"}
                   </div>
                 </div>
                 <div className="compare-details">
-                  <div><strong>Computed pHash:</strong> <code className="hash-code-inline">{inspectingMatch.phash}</code></div>
-                  <div><strong>Integrity Check:</strong> <span style={{ color: "#34d399" }}>SHA-256 Authenticated</span></div>
-                  <div><strong>Processing:</strong> <span>100% In-Browser Canvas</span></div>
+                  <div><strong>Integrity Seal:</strong> <span style={{ color: "#059669" }}>SHA-256 Validated</span></div>
+                  <div><strong>Processing:</strong> <span>100% In-Browser Memory</span></div>
                 </div>
               </div>
 
@@ -434,24 +432,23 @@ function DetectedMatches({
                 <div className="compare-card-title">
                   <span><i className="fa-solid fa-globe"></i></span> Discovered Web Mirror
                 </div>
-                <div className={`media-preview-box ${!privacyUnblurred ? "privacy-blurred" : ""}`}>
-                  <div className="hash-matrix-visual web-mirror">
-                    <div className="radar-grid"></div>
-                    <span className="matrix-text">[ {inspectingMatch.domain.toUpperCase()} ]</span>
-                    <small>Mirrored Asset #{inspectingMatch.phash.substring(0, 8)}</small>
+                <div style={{ background: "var(--bg-canvas)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-md)", padding: "16px", margin: "10px 0" }}>
+                  <div style={{ fontSize: "11px", fontWeight: "600", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "4px" }}>Discovered Asset Location</div>
+                  <strong style={{ fontSize: "13.5px", color: "var(--text-primary)", display: "block" }}>{inspectingMatch.domain}</strong>
+                  <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>
+                    Host: {inspectingMatch.hosting_provider} · Abuse: <span style={{ color: "var(--primary)" }}>{inspectingMatch.abuse_email}</span>
                   </div>
                 </div>
                 <div className="compare-details">
-                  <div><strong>Target Domain:</strong> <span>{inspectingMatch.domain}</span></div>
-                  <div><strong>Hosting Host:</strong> <span>{inspectingMatch.hosting_provider}</span></div>
-                  <div><strong>Abuse Desk:</strong> <span style={{ color: "#60a5fa" }}>{inspectingMatch.abuse_email}</span></div>
+                  <div><strong>Indexed At:</strong> <span>{inspectingMatch.indexed_at}</span></div>
+                  <div><strong>Correlation:</strong> <span style={{ color: "#059669", fontWeight: "600" }}>{Math.round(inspectingMatch.confidence * 100)}% Match</span></div>
                 </div>
               </div>
             </div>
 
             {/* Forensic Alignment & Correlation Stats */}
             <div className="forensic-metrics-card">
-              <h3><i className="fa-solid fa-microscope" style={{ marginRight: "8px", color: "#60a5fa" }}></i> Algorithmic Similarity Correlation</h3>
+              <h3><i className="fa-solid fa-microscope" style={{ marginRight: "8px", color: "#059669" }}></i> Algorithmic Similarity Correlation</h3>
               
               <div className="metrics-row">
                 <div className="metric-box">
@@ -478,27 +475,27 @@ function DetectedMatches({
                 </div>
 
                 <div className="metric-box">
-                  <span>Legal Reference</span>
-                  <strong style={{ color: "#34d399" }}>Meets IT Act Sec 66E Standard</strong>
-                  <small>Suggested 24-hr mandate citation</small>
+                  <span>Statutory Reference</span>
+                  <strong style={{ color: "#059669" }}>IT Act Sec 66E Standard</strong>
+                  <small>Mandatory 24-hr removal notice</small>
                 </div>
               </div>
             </div>
 
             {/* Verification Decision Buttons */}
-            <div className="modal-actions-row">
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "20px" }}>
               <button
-                className="action-btn-danger"
+                className="btn btn-secondary"
                 onClick={() => handleDismissMatch(inspectingMatch)}
               >
-                <i className="fa-solid fa-xmark" style={{ marginRight: "6px" }}></i> Mark as False Positive (Dismiss)
+                <i className="fa-solid fa-xmark"></i> Dismiss (False Positive)
               </button>
 
               <button
-                className="action-btn-confirm"
+                className="btn btn-primary"
                 onClick={() => handleConfirmVerification(inspectingMatch)}
               >
-                <i className="fa-solid fa-check" style={{ marginRight: "6px" }}></i> Confirm as My Content (Escalate & Verify)
+                <i className="fa-solid fa-check"></i> Confirm as Infringing Media (Escalate)
               </button>
             </div>
           </div>

@@ -4,7 +4,7 @@ import { detectLocalManipulation } from "./utils/localManipulationDetector";
 
 const API_BASE = "http://localhost:8000";
 
-function AnalyzeImage({ caseId = 1, returnPage = "dashboard", onBack, onSearchTriggered, onEvidenceSaved }) {
+function AnalyzeImage({ caseId = 1, returnPage = "dashboard", onBack, onSearchTriggered, onEvidenceSaved, onSwitchToVideo }) {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
@@ -16,6 +16,12 @@ function AnalyzeImage({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
   function handleFile(e) {
     const selectedFile = e.target.files[0];
     if (!selectedFile) return;
+
+    if (selectedFile.type && selectedFile.type.startsWith("video/") && onSwitchToVideo) {
+      onSwitchToVideo();
+      return;
+    }
+
     setFile(selectedFile);
     setPreview(URL.createObjectURL(selectedFile));
     setResult(null);
@@ -25,7 +31,14 @@ function AnalyzeImage({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
   function handleDrop(e) {
     e.preventDefault();
     const droppedFile = e.dataTransfer.files[0];
-    if (!droppedFile || !droppedFile.type.startsWith("image/")) {
+    if (!droppedFile) return;
+
+    if (droppedFile.type && droppedFile.type.startsWith("video/") && onSwitchToVideo) {
+      onSwitchToVideo();
+      return;
+    }
+
+    if (!droppedFile.type.startsWith("image/")) {
       return;
     }
     setFile(droppedFile);
@@ -166,85 +179,101 @@ function AnalyzeImage({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
             </span>
           </div>
 
-          <p className="analyze-description">
-            Your media is converted to an anonymized perceptual fingerprint (pHash) 
-            strictly inside your browser via Canvas & Web Crypto. The raw image is <b>never</b> uploaded.
+          {onSwitchToVideo && (
+            <div className="segmented-control" style={{ margin: "12px 0 16px" }}>
+              <button
+                type="button"
+                className="segmented-btn active"
+              >
+                <i className="fa-solid fa-image"></i> Image Inspection
+              </button>
+              <button
+                type="button"
+                className="segmented-btn"
+                onClick={onSwitchToVideo}
+              >
+                <i className="fa-solid fa-video"></i> Switch to Video Stream
+              </button>
+            </div>
+          )}
+
+          <p style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "16px", lineHeight: "1.5" }}>
+            Media is processed into an anonymized perceptual fingerprint (pHash) 
+            strictly inside your browser via Canvas & Web Crypto APIs. Original image bytes are never uploaded.
           </p>
 
           {!file ? (
             <div
-              className="drop-zone"
+              className="dropzone-container"
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
             >
-              <div className="upload-icon" style={{ color: "#38bdf8" }}>
-                <i className="fa-solid fa-shield-halved"></i>
+              <div className="dropzone-icon">
+                <i className="fa-solid fa-cloud-arrow-up"></i>
               </div>
-              <h3>Drop private media here to inspect</h3>
-              <p>or select from your device for sandboxed analysis</p>
-              <label className="upload-button">
-                <i className="fa-solid fa-arrow-up-from-bracket" style={{ marginRight: "8px" }}></i> Choose Image
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={handleFile}
-                  hidden
-                />
-              </label>
-              <small>Supported: JPG, PNG, WEBP · Processed 100% In-Browser</small>
+              <h3 className="dropzone-title">Select or drag image to inspect</h3>
+              <p className="dropzone-sub">Processes 100% in-browser on this device</p>
+              
+              <div style={{ marginTop: "14px" }}>
+                <label className="btn btn-primary btn-sm" style={{ cursor: "pointer" }}>
+                  <i className="fa-solid fa-folder-open"></i> Browse Files
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleFile}
+                    hidden
+                  />
+                </label>
+              </div>
+              <span className="file-spec-tag">JPEG, PNG, WEBP · Up to 25MB · Zero Data Upload</span>
             </div>
           ) : (
             <div className="image-preview-area">
-              <div className="preview-header">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
                 <div>
-                  <strong>{file.name}</strong>
-                  <p>{(file.size / 1024).toFixed(1)} KB · Local Memory Sandbox</p>
+                  <strong style={{ fontSize: "13.5px", color: "var(--text-primary)" }}>{file.name}</strong>
+                  <p style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>{(file.size / 1024).toFixed(1)} KB · In-Memory Canvas Sandbox</p>
                 </div>
-                <button className="remove-button" onClick={removeImage}>
-                  <i className="fa-solid fa-xmark" style={{ marginRight: "4px" }}></i> Remove
+                <button className="btn btn-secondary btn-sm" onClick={removeImage}>
+                  <i className="fa-solid fa-xmark"></i> Remove
                 </button>
               </div>
 
-              {/* IMAGE PREVIEW AREA WITH SCAN ANIMATION */}
-              <div className="preview-container">
-                <img src={preview} alt="Selected image preview" className="preview-image" />
-                
-                {/* ANIMATION - Only shows when 'analyzing' is true */}
-                {analyzing && (
-                  <div className="scan-overlay">
-                    <div className="scan-line"></div>
-                    <div className="bounding-box"></div>
-                    <div className="radar-grid"></div>
-                  </div>
-                )}
+              {/* CLEAN IMAGE VIEWPORT */}
+              <div className="media-viewport">
+                <img src={preview} alt="Selected preview" />
               </div>
 
               {!result && !analyzing && (
-                <button className="analyze-button pulse-btn" onClick={analyzeImageLocally}>
-                  <i className="fa-solid fa-fingerprint" style={{ marginRight: "8px" }}></i> Generate Fingerprint & Scan Locally
+                <button
+                  className="btn btn-primary"
+                  onClick={analyzeImageLocally}
+                  style={{ width: "100%", padding: "10px", marginTop: "8px" }}
+                >
+                  <i className="fa-solid fa-fingerprint"></i> Run Forensic Fingerprinting & Deepfake Scan
                 </button>
               )}
 
-              {/* HIGH-TECH LOADING TEXT */}
+              {/* PROGRESS CHECKLIST */}
               {analyzing && (
-                <div className="loading-state">
-                  <div className="spinner-cyber"></div>
-                  <strong className="loading-title">
-                    [ RUNNING ON-DEVICE VISION & HASHING ENGINE ]
-                  </strong>
-                  <p className="loading-sub">{statusMessage}</p>
+                <div className="analysis-progress-card">
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "600", fontSize: "13px", color: "var(--primary)" }}>
+                    <i className="fa-solid fa-spinner fa-spin"></i>
+                    <span>Analyzing Image Locally...</span>
+                  </div>
+                  <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>{statusMessage}</p>
                 </div>
               )}
             </div>
           )}
 
           {/* Privacy Notice */}
-          <div className="analysis-privacy" style={{ marginTop: file ? "20px" : "0" }}>
-            <span style={{ color: "#34d399", fontSize: "18px" }}>
+          <div className="privacy-notice" style={{ marginTop: file ? "18px" : "0" }}>
+            <span style={{ color: "var(--primary)", fontSize: "16px" }}>
               <i className="fa-solid fa-lock"></i>
             </span>
             <div>
-              <strong>Strict Zero-Knowledge Guarantee</strong>
+              <strong>Zero-Knowledge Architecture</strong>
               <p>
                 Only mathematical perceptual hashes and case metadata are transmitted to discover matches. 
                 Your original photograph stays on this device.
@@ -255,7 +284,7 @@ function AnalyzeImage({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
 
         {/* Right Information Panel */}
         <aside className="analysis-info">
-          <div className="info-icon" style={{ color: "#60a5fa" }}>
+          <div className="info-icon" style={{ color: "#059669" }}>
             <i className="fa-solid fa-shield-halved"></i>
           </div>
           <h3>Zero-Trust Inspection Pipeline</h3>
@@ -300,38 +329,38 @@ function AnalyzeImage({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
               <h2>Forensic Inspection & Specification Report</h2>
             </div>
             <span className="result-status-verified">
-              <i className="fa-solid fa-circle-check" style={{ marginRight: "6px" }}></i> 0 Raw Uploads (Zero-Trust Verified)
+              <i className="fa-solid fa-circle-check"></i> 0 Raw Uploads (Zero-Trust Verified)
             </span>
           </div>
 
           {/* Alert Matrix Hero Verdict Banner */}
           <div className={`verdict-hero-banner ${result.alertClass || "moderate"}`}>
-            <div>
+            <div style={{ flex: 1 }}>
               <span className={`verdict-badge ${result.alertClass || "moderate"}`}>
                 {result.overallVerdict}
               </span>
-              <h3 style={{ fontSize: "20px", margin: "10px 0 6px", color: "var(--text-color)" }}>
+              <h3 style={{ fontSize: "18px", fontWeight: "700", margin: "8px 0 6px", color: "var(--text-primary)" }}>
                 {result.alertBadgeText}
               </h3>
-              <p style={{ fontSize: "13.5px", color: "#cbd5e1", maxWidth: "650px", lineHeight: "1.5" }}>
+              <p style={{ fontSize: "13px", color: "var(--text-secondary)", maxWidth: "620px", lineHeight: "1.5" }}>
                 {result.alertDescription}
               </p>
             </div>
 
             {/* Authenticity Score Gauge */}
             <div className="authenticity-score-box">
-              <span style={{ fontSize: "11px", fontWeight: "700", textTransform: "uppercase", color: "#94a3b8", letterSpacing: "0.5px" }}>
+              <span style={{ fontSize: "11px", fontWeight: "700", textTransform: "uppercase", color: "var(--text-muted)", letterSpacing: "0.5px" }}>
                 Authenticity Score
               </span>
               <strong
                 className="score-number"
                 style={{
-                  color: result.authenticityScore >= 75 ? "#10b981" : result.authenticityScore >= 45 ? "#f59e0b" : "#ef4444"
+                  color: result.authenticityScore >= 75 ? "#059669" : result.authenticityScore >= 45 ? "#d97706" : "#dc2626"
                 }}
               >
                 {result.authenticityScore}%
               </strong>
-              <small style={{ fontSize: "11px", color: "#94a3b8" }}>
+              <small style={{ fontSize: "11px", color: "var(--text-muted)" }}>
                 {result.authenticityScore >= 75 ? "Organic / Authentic" : result.authenticityScore >= 45 ? "Altered Media" : "Synthetic / Deepfake"}
               </small>
               <div className="authenticity-bar">
@@ -339,7 +368,7 @@ function AnalyzeImage({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
                   className="authenticity-bar-fill"
                   style={{
                     width: `${result.authenticityScore}%`,
-                    background: result.authenticityScore >= 75 ? "#10b981" : result.authenticityScore >= 45 ? "#f59e0b" : "#ef4444"
+                    background: result.authenticityScore >= 75 ? "#059669" : result.authenticityScore >= 45 ? "#d97706" : "#dc2626"
                   }}
                 ></div>
               </div>
@@ -352,59 +381,59 @@ function AnalyzeImage({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
             <div className="forensic-spec-card">
               <div className="forensic-card-header">
                 <span className="forensic-card-label">File Type & Integrity</span>
-                <span style={{ fontSize: "16px", color: "#38bdf8" }}><i className="fa-solid fa-file-shield"></i></span>
+                <span style={{ fontSize: "15px", color: "var(--primary)" }}><i className="fa-solid fa-file-shield"></i></span>
               </div>
               <strong className="forensic-card-value">{result.fileType}</strong>
               <p className="forensic-card-sub">
-                Size: <b>{result.fileSizeKb} KB</b> · SHA-256 Digest Sealed
+                Size: <b>{result.fileSizeKb} KB</b> · SHA-256 Sealed
               </p>
             </div>
 
             {/* Card 2: Human & Face Detection */}
             <div className="forensic-spec-card">
               <div className="forensic-card-header">
-                <span className="forensic-card-label">Human & Face Detection</span>
-                <span style={{ fontSize: "16px", color: "#a855f7" }}><i className="fa-solid fa-user-check"></i></span>
+                <span className="forensic-card-label">Biometrics & Subject</span>
+                <span style={{ fontSize: "15px", color: "#7c3aed" }}><i className="fa-solid fa-user-check"></i></span>
               </div>
               <strong className="forensic-card-value">
                 {result.humanDetected ? "Human Subject Detected" : "No Human Isolated"}
               </strong>
               <p className="forensic-card-sub">
                 {result.faceDetected 
-                  ? `✓ ${result.faceCount} Face(s) Detected (${result.faceConfidence}% conf.)` 
-                  : "No clear facial landmark boundaries isolated"}
+                  ? `✓ ${result.faceCount} Face(s) (${result.faceConfidence}% conf.)` 
+                  : "No facial landmark boundaries isolated"}
               </p>
             </div>
 
             {/* Card 3: Content Safety (Independent Pipeline) */}
             <div className="forensic-spec-card">
               <div className="forensic-card-header">
-                <span className="forensic-card-label">Content Safety (Independent)</span>
-                <span style={{ fontSize: "16px", color: "#34d399" }}><i className="fa-solid fa-shield-halved"></i></span>
+                <span className="forensic-card-label">Content Safety Rating</span>
+                <span style={{ fontSize: "15px", color: "var(--primary)" }}><i className="fa-solid fa-shield-halved"></i></span>
               </div>
               <strong
                 className="forensic-card-value"
                 style={{
-                  color: result.contentSafety === "SFW" ? "#34d399" : result.contentSafety === "NSFW" ? "#ef4444" : "#f59e0b"
+                  color: result.contentSafety === "SFW" ? "#059669" : result.contentSafety === "NSFW" ? "#dc2626" : "#d97706"
                 }}
               >
                 {result.contentSafety === "SFW" ? "SFW (Safe for Work)" : result.contentSafety === "NSFW" ? "NSFW (Explicit Content)" : "Sensitive Media"}
               </strong>
               <p className="forensic-card-sub">
-                Safety Score: <b>{result.safetyScore}%</b> · Independent Safety Model
+                Safety Score: <b>{result.safetyScore}%</b> · Independent Engine
               </p>
             </div>
 
             {/* Card 4: AI-Generation Probability */}
             <div className="forensic-spec-card">
               <div className="forensic-card-header">
-                <span className="forensic-card-label">AI-Generation Probability</span>
-                <span style={{ fontSize: "16px", color: "#c084fc" }}><i className="fa-solid fa-robot"></i></span>
+                <span className="forensic-card-label">AI Generation Risk</span>
+                <span style={{ fontSize: "15px", color: "#7c3aed" }}><i className="fa-solid fa-robot"></i></span>
               </div>
               <strong
                 className="forensic-card-value"
                 style={{
-                  color: result.aiGeneratedProbability >= 65 ? "#c084fc" : "#93c5fd"
+                  color: result.aiGeneratedProbability >= 65 ? "#7c3aed" : "#0284c7"
                 }}
               >
                 {result.aiGeneratedProbability}% AI Probability
@@ -418,12 +447,12 @@ function AnalyzeImage({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
             <div className="forensic-spec-card">
               <div className="forensic-card-header">
                 <span className="forensic-card-label">Manipulation & Splicing</span>
-                <span style={{ fontSize: "16px", color: "#fb923c" }}><i className="fa-solid fa-wand-magic-sparkles"></i></span>
+                <span style={{ fontSize: "15px", color: "#d97706" }}><i className="fa-solid fa-wand-magic-sparkles"></i></span>
               </div>
               <strong
                 className="forensic-card-value"
                 style={{
-                  color: result.manipulationDetected ? "#fb923c" : "#34d399"
+                  color: result.manipulationDetected ? "#d97706" : "#059669"
                 }}
               >
                 {result.manipulationDetected ? "Manipulation Detected" : "No Splicing Detected"}
@@ -436,19 +465,19 @@ function AnalyzeImage({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
             {/* Card 6: Deepfake & Biometric Risk */}
             <div className="forensic-spec-card">
               <div className="forensic-card-header">
-                <span className="forensic-card-label">Deepfake & Face-Swap Risk</span>
-                <span style={{ fontSize: "16px", color: "#f87171" }}><i className="fa-solid fa-masks-theater"></i></span>
+                <span className="forensic-card-label">Deepfake & Face Swap</span>
+                <span style={{ fontSize: "15px", color: "#dc2626" }}><i className="fa-solid fa-masks-theater"></i></span>
               </div>
               <strong
                 className="forensic-card-value"
                 style={{
-                  color: result.deepfakeRisk === "Critical" || result.deepfakeRisk === "High" ? "#f87171" : "#34d399"
+                  color: result.deepfakeRisk === "Critical" || result.deepfakeRisk === "High" ? "#dc2626" : "#059669"
                 }}
               >
                 {result.deepfakeRisk} Risk ({result.faceSwapProbability}%)
               </strong>
               <p className="forensic-card-sub">
-                Facial Boundary Gradient: {result.compressionAnomalyScore}%
+                Boundary Anomaly: {result.compressionAnomalyScore}%
               </p>
             </div>
 
@@ -456,9 +485,23 @@ function AnalyzeImage({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
             <div className="forensic-spec-card">
               <div className="forensic-card-header">
                 <span className="forensic-card-label">Perceptual Hash (dHash)</span>
-                <span style={{ fontSize: "16px", color: "#facc15" }}><i className="fa-solid fa-fingerprint"></i></span>
+                <span style={{ fontSize: "15px", color: "var(--primary)" }}><i className="fa-solid fa-fingerprint"></i></span>
               </div>
-              <strong className="hash-code">{result.phash}</strong>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", margin: "2px 0 4px" }}>
+                <code className="hash-code">{result.phash}</code>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(result.phash);
+                    if (onToast) onToast("Perceptual hash copied to clipboard", "success");
+                  }}
+                  title="Copy Hash"
+                  style={{ padding: "2px 6px", fontSize: "11px" }}
+                >
+                  <i className="fa-solid fa-copy"></i>
+                </button>
+              </div>
               <p className="forensic-card-sub">
                 Anonymized 64-bit Visual Fingerprint
               </p>
@@ -467,28 +510,31 @@ function AnalyzeImage({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
             {/* Card 8: Discovered Threat Matches */}
             <div className="forensic-spec-card">
               <div className="forensic-card-header">
-                <span className="forensic-card-label">Open-Web Threat Matches</span>
-                <span style={{ fontSize: "16px", color: "#ef4444" }}><i className="fa-solid fa-globe"></i></span>
+                <span className="forensic-card-label">Threat Index Matches</span>
+                <span style={{ fontSize: "15px", color: result.matches > 0 ? "#dc2626" : "var(--primary)" }}><i className="fa-solid fa-globe"></i></span>
               </div>
               <strong
                 className="forensic-card-value"
                 style={{
-                  color: result.matches > 0 ? "#ef4444" : "#34d399"
+                  color: result.matches > 0 ? "#dc2626" : "#059669"
                 }}
               >
                 {result.matches} Discovered Match{result.matches !== 1 ? "es" : ""}
               </strong>
               <p className="forensic-card-sub">
-                Across indexed mirrors, forums & lockers
+                Across indexed mirrors & lockers
               </p>
             </div>
           </div>
 
           {/* Statutory Guidance */}
           <div className="statutory-box">
-            <h4><i className="fa-solid fa-scale-balanced" style={{ marginRight: "8px", color: "#c084fc" }}></i> Suggested IT Act & Legal Provisions (Advisory)</h4>
-            <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "4px 0 10px" }}>
-              The following legal provisions are suggested for reference in formal complaints based on detected forensic indicators:
+            <h4>
+              <i className="fa-solid fa-scale-balanced" style={{ color: "var(--primary)" }}></i>
+              Suggested Statutory Provisions (India IT Act & Legal Framework)
+            </h4>
+            <p style={{ fontSize: "12.5px", color: "var(--text-muted)", margin: "4px 0 10px" }}>
+              Suggested legal provisions for notice drafting based on detected indicators:
             </p>
             <div className="statutory-tags">
               {(result.statutoryViolations || result.suggestedStatutes || []).map((v, i) => (
@@ -498,33 +544,33 @@ function AnalyzeImage({ caseId = 1, returnPage = "dashboard", onBack, onSearchTr
           </div>
 
           {/* Action Row */}
-          <div className="result-actions-row">
+          <div style={{ display: "flex", gap: "10px", marginTop: "20px", flexWrap: "wrap" }}>
             <button
-              className="save-evidence-btn"
+              className="btn btn-primary"
               onClick={saveFingerprintToCase}
               disabled={savingEvidence || evidenceSaved}
             >
               {evidenceSaved ? (
                 <>
-                  <i className="fa-solid fa-check" style={{ marginRight: "6px" }}></i> Saved to Case Evidence
+                  <i className="fa-solid fa-check"></i> Fingerprint Saved to Vault
                 </>
               ) : savingEvidence ? (
                 <>
-                  <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: "6px" }}></i> Saving...
+                  <i className="fa-solid fa-spinner fa-spin"></i> Preserving Evidence...
                 </>
               ) : (
                 <>
-                  <i className="fa-solid fa-box-archive" style={{ marginRight: "8px" }}></i> Preserve Fingerprint in Evidence Vault
+                  <i className="fa-solid fa-box-archive"></i> Preserve Fingerprint in Evidence Vault
                 </>
               )}
             </button>
 
             {onSearchTriggered && (
               <button
-                className="search-matches-btn"
+                className="btn btn-secondary"
                 onClick={() => onSearchTriggered(result.phash, result.matchedResults)}
               >
-                <i className="fa-solid fa-globe" style={{ marginRight: "8px" }}></i> View {result.matches} Discovered Matches <i className="fa-solid fa-arrow-right" style={{ marginLeft: "6px" }}></i>
+                <i className="fa-solid fa-globe"></i> View {result.matches} Discovered Matches <i className="fa-solid fa-arrow-right" style={{ marginLeft: "4px" }}></i>
               </button>
             )}
           </div>
