@@ -112,36 +112,38 @@ function EvidenceVault({ caseData, returnPage = "dashboard", onBack, onIssueTake
           <i className="fa-solid fa-arrow-left" style={{ marginRight: "6px" }}></i> Back to {returnPage === "workspace" ? "Workspace" : "Dashboard"}
         </button>
         <div>
-          <div className="zero-trust-badge">
-            <span className="dot"></span>
-            DIGITAL EVIDENCE VAULT: TAMPER-EVIDENT FORENSIC LEDGER
+          <div className="zero-trust-badge" style={{ backgroundColor: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0", padding: "4px 10px", borderRadius: "20px", display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: "600", marginBottom: "8px" }}>
+            <span className="dot" style={{ backgroundColor: "#22c55e", width: "6px", height: "6px", borderRadius: "50%" }}></span>
+            SECURE EVIDENCE LOCKER
           </div>
-          <h1>Preserved Digital Evidence Locker</h1>
-          <p className="case-id">
+          <h1 style={{ fontSize: "20px", fontWeight: "700", color: "#1e293b", margin: 0 }}>Saved Digital Evidence</h1>
+          <p className="case-id" style={{ color: "#64748b", marginTop: "4px" }}>
             {caseData ? `Case: ${caseData.title} (${caseData.case_number})` : "Global Evidence Vault"}
           </p>
         </div>
       </div>
 
       {/* Control Bar */}
-      <div className="workspace-card" style={{ width: "100%", marginBottom: "20px" }}>
-        <div className="vault-controls-row">
+      <div className="workspace-card" style={{ width: "100%", marginBottom: "20px", backgroundColor: "#ffffff", padding: "20px", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px", boxSizing: "border-box" }}>
+        <div style={{ position: "relative", minWidth: "300px", flex: 1 }}>
+          <i className="fa-solid fa-search" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}></i>
           <input
             type="text"
-            placeholder="Filter evidence by URL, domain, or pHash..."
+            placeholder="Search saved evidence (URL, domain, hash)..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="vault-search-input"
+            style={{ width: "100%", padding: "10px 10px 10px 36px", borderRadius: "8px", border: "1px solid #cbd5e1", backgroundColor: "#f8fafc", fontSize: "14px", boxSizing: "border-box" }}
           />
+        </div>
 
-          <div className="vault-export-btns">
-            <button className="export-btn" onClick={exportJSONManifest}>
-              <i className="fa-solid fa-file-code" style={{ marginRight: "6px" }}></i> Export JSON Manifest
-            </button>
-            <button className="export-btn" onClick={exportCSV}>
-              <i className="fa-solid fa-file-csv" style={{ marginRight: "6px" }}></i> Export CSV Table
-            </button>
-          </div>
+        <div className="vault-export-btns" style={{ display: "flex", gap: "10px" }}>
+          <button className="export-btn" onClick={exportJSONManifest} style={{ padding: "8px 16px", backgroundColor: "#f1f5f9", color: "#334155", borderRadius: "8px", border: "1px solid #e2e8f0", fontWeight: "500", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+            <i className="fa-solid fa-file-code"></i> Export JSON
+          </button>
+          <button className="export-btn" onClick={exportCSV} style={{ padding: "8px 16px", backgroundColor: "#f1f5f9", color: "#334155", borderRadius: "8px", border: "1px solid #e2e8f0", fontWeight: "500", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+            <i className="fa-solid fa-file-csv"></i> Export CSV
+          </button>
         </div>
       </div>
 

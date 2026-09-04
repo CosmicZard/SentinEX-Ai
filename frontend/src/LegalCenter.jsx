@@ -218,119 +218,131 @@ Generated via SentinEx-AI Zero-Trust Platform`;
           </div>
 
           <div className="form-group" style={{ marginTop: "15px" }}>
-            <label className="checkbox-label">
+            <label className="checkbox-label" style={{ padding: "12px", backgroundColor: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
               <input
                 type="checkbox"
                 checked={isAnonymous}
                 onChange={(e) => setIsAnonymous(e.target.checked)}
+                style={{ width: "18px", height: "18px" }}
               />
-              <strong>Protect Victim Identity (File with Anonymous Alias in Public Logs)</strong>
+              <span><strong>Keep my identity a secret</strong> (We'll use an alias in public documents)</span>
             </label>
           </div>
 
-          <div className="form-grid-2">
+          <div className="form-grid-2" style={{ gap: "20px", marginTop: "20px" }}>
             <div className="form-group">
-              <label>Complainant Name / Protected Alias:</label>
+              <label style={{ fontWeight: "600", color: "#334155" }}>Your Name (or Alias):</label>
               <input
                 type="text"
                 value={complainantAlias}
                 onChange={(e) => setComplainantAlias(e.target.value)}
                 className="vault-search-input"
+                style={{ padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "6px" }}
               />
             </div>
             <div className="form-group">
-              <label>Incident Date:</label>
+              <label style={{ fontWeight: "600", color: "#334155" }}>When did you notice this?</label>
               <input
                 type="date"
                 value={incidentDate}
                 onChange={(e) => setIncidentDate(e.target.value)}
                 className="vault-search-input"
+                style={{ padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "6px" }}
               />
             </div>
           </div>
 
-          <div className="form-group">
-            <label>Known Suspect / Source Platform:</label>
+          <div className="form-group" style={{ marginTop: "20px" }}>
+            <label style={{ fontWeight: "600", color: "#334155" }}>Do you know who did this, or where it was posted?</label>
             <input
               type="text"
               value={knownSuspect}
               onChange={(e) => setKnownSuspect(e.target.value)}
               className="vault-search-input"
+              style={{ padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "6px" }}
             />
           </div>
 
-          <div className="form-group">
-            <label>Suggested Statutory Sections (Select to Include in Draft):</label>
-            <div className="statute-checklist">
-              <label className="check-item">
+          <div className="form-group" style={{ marginTop: "25px" }}>
+            <label style={{ fontWeight: "600", color: "#334155", marginBottom: "10px", display: "block" }}>
+              Which laws apply? (We've checked the most common ones for you)
+            </label>
+            <div className="statute-checklist" style={{ display: "grid", gap: "12px" }}>
+              <label className="check-item" style={{ padding: "14px", backgroundColor: selectedStatutes.sec66E ? "#f0fdf4" : "#f8fafc", border: selectedStatutes.sec66E ? "1px solid #86efac" : "1px solid #e2e8f0", borderRadius: "10px", cursor: "pointer", display: "flex", alignItems: "flex-start", gap: "12px", transition: "all 0.2s" }}>
                 <input
                   type="checkbox"
                   checked={selectedStatutes.sec66E}
                   onChange={() => toggleStatute("sec66E")}
+                  style={{ marginTop: "4px", width: "16px", height: "16px" }}
                 />
                 <div>
-                  <strong>IT Act Sec 66E — Violation of Bodily Privacy</strong>
-                  <small>Punishment for intentionally capturing or publishing images of private areas</small>
+                  <strong style={{ display: "block", color: "#1e293b", fontSize: "14px" }}>IT Act Sec 66E — Violation of Bodily Privacy</strong>
+                  <small style={{ color: "#64748b", fontSize: "12.5px", display: "block", marginTop: "2px" }}>Capturing or sharing private images without consent</small>
                 </div>
               </label>
 
-              <label className="check-item">
+              <label className="check-item" style={{ padding: "14px", backgroundColor: selectedStatutes.sec67A ? "#f0fdf4" : "#f8fafc", border: selectedStatutes.sec67A ? "1px solid #86efac" : "1px solid #e2e8f0", borderRadius: "10px", cursor: "pointer", display: "flex", alignItems: "flex-start", gap: "12px", transition: "all 0.2s" }}>
                 <input
                   type="checkbox"
                   checked={selectedStatutes.sec67A}
                   onChange={() => toggleStatute("sec67A")}
+                  style={{ marginTop: "4px", width: "16px", height: "16px" }}
                 />
                 <div>
-                  <strong>IT Act Sec 67A — Sexually Explicit Material</strong>
-                  <small>Non-bailable offence, punishable with up to 5 years imprisonment</small>
+                  <strong style={{ display: "block", color: "#1e293b", fontSize: "14px" }}>IT Act Sec 67A — Sexually Explicit Material</strong>
+                  <small style={{ color: "#64748b", fontSize: "12.5px", display: "block", marginTop: "2px" }}>A serious, non-bailable offense (up to 5 years in prison)</small>
                 </div>
               </label>
 
-              <label className="check-item">
+              <label className="check-item" style={{ padding: "14px", backgroundColor: selectedStatutes.sec66D ? "#f0fdf4" : "#f8fafc", border: selectedStatutes.sec66D ? "1px solid #86efac" : "1px solid #e2e8f0", borderRadius: "10px", cursor: "pointer", display: "flex", alignItems: "flex-start", gap: "12px", transition: "all 0.2s" }}>
                 <input
                   type="checkbox"
                   checked={selectedStatutes.sec66D}
                   onChange={() => toggleStatute("sec66D")}
+                  style={{ marginTop: "4px", width: "16px", height: "16px" }}
                 />
                 <div>
-                  <strong>IT Act Sec 66D — Cheating by Personation (AI Deepfakes)</strong>
-                  <small>Applies to face-swapped, synthetic, or digitally manipulated likenesses</small>
+                  <strong style={{ display: "block", color: "#1e293b", fontSize: "14px" }}>IT Act Sec 66D — AI Deepfakes & Impersonation</strong>
+                  <small style={{ color: "#64748b", fontSize: "12.5px", display: "block", marginTop: "2px" }}>Applies if your face was swapped or manipulated</small>
                 </div>
               </label>
 
-              <label className="check-item">
+              <label className="check-item" style={{ padding: "14px", backgroundColor: selectedStatutes.rule3_2_b ? "#f0fdf4" : "#f8fafc", border: selectedStatutes.rule3_2_b ? "1px solid #86efac" : "1px solid #e2e8f0", borderRadius: "10px", cursor: "pointer", display: "flex", alignItems: "flex-start", gap: "12px", transition: "all 0.2s" }}>
                 <input
                   type="checkbox"
                   checked={selectedStatutes.rule3_2_b}
                   onChange={() => toggleStatute("rule3_2_b")}
+                  style={{ marginTop: "4px", width: "16px", height: "16px" }}
                 />
                 <div>
-                  <strong>IT Rules 2021 Rule 3(2)(b) — Mandatory 24-Hr Intermediary Removal</strong>
-                  <small>Requires platforms to remove NCII within 24 hours of notification</small>
+                  <strong style={{ display: "block", color: "#1e293b", fontSize: "14px" }}>IT Rules 2021 Rule 3(2)(b) — 24-Hr Removal</strong>
+                  <small style={{ color: "#64748b", fontSize: "12.5px", display: "block", marginTop: "2px" }}>Forces platforms to delete the content within 24 hours</small>
                 </div>
               </label>
 
-              <label className="check-item">
+              <label className="check-item" style={{ padding: "14px", backgroundColor: selectedStatutes.ipc354C ? "#f0fdf4" : "#f8fafc", border: selectedStatutes.ipc354C ? "1px solid #86efac" : "1px solid #e2e8f0", borderRadius: "10px", cursor: "pointer", display: "flex", alignItems: "flex-start", gap: "12px", transition: "all 0.2s" }}>
                 <input
                   type="checkbox"
                   checked={selectedStatutes.ipc354C}
                   onChange={() => toggleStatute("ipc354C")}
+                  style={{ marginTop: "4px", width: "16px", height: "16px" }}
                 />
                 <div>
-                  <strong>IPC Sec 354C / BNS Sec 77 — Voyeurism</strong>
-                  <small>Capturing or disseminating images of a person engaged in private acts</small>
+                  <strong style={{ display: "block", color: "#1e293b", fontSize: "14px" }}>IPC Sec 354C / BNS Sec 77 — Voyeurism</strong>
+                  <small style={{ color: "#64748b", fontSize: "12.5px", display: "block", marginTop: "2px" }}>For secretly recording or sharing private acts</small>
                 </div>
               </label>
             </div>
           </div>
 
-          <div className="form-group">
-            <label>Statement of Facts & Narrative:</label>
+          <div className="form-group" style={{ marginTop: "25px" }}>
+            <label style={{ fontWeight: "600", color: "#334155" }}>Tell us what happened (in your own words):</label>
             <textarea
               rows={5}
               value={incidentDetails}
               onChange={(e) => setIncidentDetails(e.target.value)}
               className="notice-preview-textarea"
+              style={{ padding: "14px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "6px", width: "100%", lineHeight: "1.5", boxSizing: "border-box" }}
             />
           </div>
 

@@ -161,74 +161,80 @@ function DetectedMatches({
           <i className="fa-solid fa-arrow-left" style={{ marginRight: "6px" }}></i> Back to {returnPage === "workspace" ? "Workspace" : "Dashboard"}
         </button>
         <div>
-          <div className="zero-trust-badge">
-            <span className="dot"></span>
-            OPEN-WEB DISCOVERY: ZERO-KNOWLEDGE HASH MATCHING
+          <div className="zero-trust-badge" style={{ backgroundColor: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0", padding: "4px 10px", borderRadius: "20px", display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: "600", marginBottom: "8px" }}>
+            <span className="dot" style={{ backgroundColor: "#22c55e", width: "6px", height: "6px", borderRadius: "50%" }}></span>
+            Privacy-Preserving Search
           </div>
-          <h1>Detected Matches & Threat Intelligence</h1>
-          <p className="case-id">
+          <h1 style={{ fontSize: "20px", fontWeight: "700", color: "#1e293b", margin: 0 }}>Threat Intelligence & Discovery</h1>
+          <p className="case-id" style={{ color: "#64748b", marginTop: "4px" }}>
             {caseData ? `Linked Case: ${caseData.title} (${caseData.case_number})` : "Global Threat Discovery Feed"}
           </p>
         </div>
       </div>
 
       {/* Search Input Bar */}
-      <div className="workspace-card" style={{ maxWidth: "1100px", margin: "0 auto 20px" }}>
-        <form onSubmit={handleSearch} className="search-form-row">
-          <div className="search-input-wrap">
-            <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
+      <div className="workspace-card" style={{ maxWidth: "1100px", margin: "0 auto 20px", backgroundColor: "#ffffff", padding: "24px", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+        <form onSubmit={handleSearch} className="search-form-row" style={{ display: "flex", gap: "12px" }}>
+          <div className="search-input-wrap" style={{ flex: 1, position: "relative" }}>
+            <span className="search-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><i className="fa-solid fa-magnifying-glass"></i></span>
             <input
               type="text"
               value={searchHash}
               onChange={(e) => setSearchHash(e.target.value)}
-              placeholder="Enter anonymized perceptual hash (e.g. d9b23f8e4c1a7650 or vid_...)..."
+              placeholder="Enter the secure image or video hash (e.g. d9b23f8e...)"
               className="search-hash-input"
+              style={{ width: "100%", padding: "14px 14px 14px 40px", borderRadius: "8px", border: "1px solid #cbd5e1", backgroundColor: "#f8fafc", fontSize: "14px", color: "#334155", boxSizing: "border-box" }}
             />
           </div>
-          <button type="submit" className="search-submit-btn" disabled={loading}>
+          <button type="submit" className="search-submit-btn" disabled={loading} style={{ padding: "0 24px", backgroundColor: "#0284c7", color: "white", borderRadius: "8px", border: "none", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", transition: "background-color 0.2s" }}>
             {loading ? (
               <>
-                <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: "6px" }}></i> Searching...
+                <i className="fa-solid fa-spinner fa-spin"></i> Searching...
               </>
             ) : (
               <>
-                <i className="fa-solid fa-globe" style={{ marginRight: "6px" }}></i> Scan Open Web
+                <i className="fa-solid fa-globe"></i> Scan Web
               </>
             )}
           </button>
         </form>
 
-        <div className="filter-bar">
-          <span className="filter-label">Filter by Threat Category:</span>
+        <div className="filter-bar" style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "20px", alignItems: "center" }}>
+          <span className="filter-label" style={{ fontSize: "13px", fontWeight: "600", color: "#64748b", marginRight: "8px" }}>Show:</span>
           <button
             className={`filter-pill ${filterCategory === "all" ? "active" : ""}`}
             onClick={() => setFilterCategory("all")}
+            style={{ padding: "6px 14px", borderRadius: "20px", border: filterCategory === "all" ? "1px solid #0284c7" : "1px solid #e2e8f0", backgroundColor: filterCategory === "all" ? "#f0f9ff" : "#f8fafc", color: filterCategory === "all" ? "#0284c7" : "#64748b", fontSize: "13px", fontWeight: "500", cursor: "pointer", transition: "all 0.2s" }}
           >
-            All Sources ({results.filter(m => !dismissedMatches.has(m.url)).length})
+            All Results ({results.filter(m => !dismissedMatches.has(m.url)).length})
           </button>
           <button
             className={`filter-pill ${filterCategory === "telegram" ? "active" : ""}`}
             onClick={() => setFilterCategory("telegram")}
+            style={{ padding: "6px 14px", borderRadius: "20px", border: filterCategory === "telegram" ? "1px solid #0284c7" : "1px solid #e2e8f0", backgroundColor: filterCategory === "telegram" ? "#f0f9ff" : "#f8fafc", color: filterCategory === "telegram" ? "#0284c7" : "#64748b", fontSize: "13px", fontWeight: "500", cursor: "pointer", transition: "all 0.2s" }}
           >
-            Telegram & Social Mirrors
+            Telegram & Socials
           </button>
           <button
             className={`filter-pill ${filterCategory === "cyberlocker" ? "active" : ""}`}
             onClick={() => setFilterCategory("cyberlocker")}
+            style={{ padding: "6px 14px", borderRadius: "20px", border: filterCategory === "cyberlocker" ? "1px solid #0284c7" : "1px solid #e2e8f0", backgroundColor: filterCategory === "cyberlocker" ? "#f0f9ff" : "#f8fafc", color: filterCategory === "cyberlocker" ? "#0284c7" : "#64748b", fontSize: "13px", fontWeight: "500", cursor: "pointer", transition: "all 0.2s" }}
           >
-            CyberLockers & Cloud Vaults
+            Cloud Storage
           </button>
           <button
             className={`filter-pill ${filterCategory === "anon" ? "active" : ""}`}
             onClick={() => setFilterCategory("anon")}
+            style={{ padding: "6px 14px", borderRadius: "20px", border: filterCategory === "anon" ? "1px solid #0284c7" : "1px solid #e2e8f0", backgroundColor: filterCategory === "anon" ? "#f0f9ff" : "#f8fafc", color: filterCategory === "anon" ? "#0284c7" : "#64748b", fontSize: "13px", fontWeight: "500", cursor: "pointer", transition: "all 0.2s" }}
           >
-            Image Boards & Anonymous Forums
+            Anonymous Forums
           </button>
           <button
             className={`filter-pill ${filterCategory === "video" ? "active" : ""}`}
             onClick={() => setFilterCategory("video")}
+            style={{ padding: "6px 14px", borderRadius: "20px", border: filterCategory === "video" ? "1px solid #0284c7" : "1px solid #e2e8f0", backgroundColor: filterCategory === "video" ? "#f0f9ff" : "#f8fafc", color: filterCategory === "video" ? "#0284c7" : "#64748b", fontSize: "13px", fontWeight: "500", cursor: "pointer", transition: "all 0.2s" }}
           >
-            Video Stream Hosts
+            Video Hosts
           </button>
         </div>
       </div>
