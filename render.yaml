@@ -4,16 +4,12 @@ services:
     name: sentinex-backend
     env: docker
     rootDir: Backend
-    plan: starter # Note: Disks require a paid Starter plan ($7/mo) on Render
-    disk:
-      name: sentinex-data
-      mountPath: /app/data
-      sizeGB: 1
+    plan: free
     envVars:
       - key: PORT
         value: "8000"
       - key: DB_PATH
-        value: "/app/data/sentinex.db"
+        value: "/app/sentinex.db"
 
   # 2. React Frontend Static Site
   - type: web
