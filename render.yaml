@@ -10,8 +10,6 @@ services:
     envVars:
       - key: PORT
         value: "8000"
-      - key: DB_PATH
-        value: "/app/sentinex.db"
 
   # 2. React Frontend Static Site
   - type: web
