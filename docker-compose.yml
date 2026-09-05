@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend_data:/app/reports
+      - backend_data:/app/uploads
+      # Bind mount the SQLite DB file so it persists
+      - ./Backend/sentinex.db:/app/sentinex.db
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Change this to your production API URL when deploying to the cloud
+        - VITE_API_BASE_URL=http://localhost:8000
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  backend_data:

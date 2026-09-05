@@ -1,0 +1,35 @@
+services:
+  # 1. FastAPI Backend Service
+  - type: web
+    name: sentinex-backend
+    env: docker
+    rootDir: Backend
+    plan: starter # Note: Disks require a paid Starter plan ($7/mo) on Render
+    disk:
+      name: sentinex-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: DB_PATH
+        value: "/app/data/sentinex.db"
+
+  # 2. React Frontend Static Site
+  - type: web
+    name: sentinex-frontend
+    env: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: sentinex-backend
+          envVarKey: RENDER_EXTERNAL_URL
+    # Ensure React Router works correctly
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { computeLocalPerceptualHash, computeSHA256 } from "./utils/privacyFingerprint";
 import { detectLocalManipulation } from "./utils/localManipulationDetector";
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 function AnalyzeImage({ caseId = 1, returnPage = "dashboard", onBack, onSearchTriggered, onEvidenceSaved, onSwitchToVideo }) {
   const [file, setFile] = useState(null);

@@ -2,8 +2,8 @@ import sqlite3
 import os
 from datetime import datetime
 
-DATABASE_URL = "sentinex.db"
-DATABASE_URL_SA = "sqlite:///./sentinex.db"
+DATABASE_URL = os.getenv("DB_PATH", "sentinex.db")
+DATABASE_URL_SA = f"sqlite:///{DATABASE_URL}"
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
