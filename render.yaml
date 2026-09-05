@@ -2,9 +2,11 @@ services:
   # 1. FastAPI Backend Service
   - type: web
     name: sentinex-backend
-    env: docker
+    env: python
     rootDir: Backend
     plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PORT
         value: "8000"
